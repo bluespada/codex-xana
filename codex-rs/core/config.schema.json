@@ -791,6 +791,9 @@
             "chronicle": {
               "type": "boolean"
             },
+            "cli_daybreak": {
+              "type": "boolean"
+            },
             "code_mode": {
               "$ref": "#/definitions/FeatureToml_for_CodeModeConfigToml"
             },
@@ -6973,6 +6976,9 @@
           "type": "boolean"
         },
         "chronicle": {
+          "type": "boolean"
+        },
+        "cli_daybreak": {
           "type": "boolean"
         },
         "code_mode": {
