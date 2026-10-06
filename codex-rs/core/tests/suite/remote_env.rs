@@ -75,6 +75,7 @@ use codex_protocol::protocol::Op;
 use codex_protocol::protocol::ReviewDecision;
 use codex_protocol::protocol::SandboxPolicy;
 use codex_protocol::protocol::ThreadSettingsOverrides;
+use codex_protocol::protocol::TurnEnvironmentRequest;
 use codex_protocol::protocol::TurnEnvironmentSelection;
 use codex_protocol::protocol::TurnEnvironmentSelections;
 use codex_protocol::protocol::TurnSettingsUpdate;
@@ -1690,7 +1691,7 @@ async fn shared_executor_keeps_ready_capability_roots_scoped_to_each_attachment(
     let second = test
         .thread_manager
         .start_thread(StartThreadOptions {
-            environments: Some(vec![TurnEnvironmentSelection {
+            environments: Some(vec![TurnEnvironmentRequest {
                 config: EnvironmentConfigState::Ready(EnvironmentConfig {
                     allow_login_shell: true,
                     workspace_roots: selection.workspace_roots.clone(),
@@ -1704,7 +1705,7 @@ async fn shared_executor_keeps_ready_capability_roots_scoped_to_each_attachment(
                     network_policy: None,
                     selected_capability_roots: vec![root("startup-root"), root("second-root")],
                 }),
-                ..selection.clone()
+                ..selection.clone().into_request()
             }]),
             thread_extension_init: second_thread_init,
             ..StartThreadOptions::new(test.config.clone())
@@ -1965,7 +1966,7 @@ async fn pending_attachment_installs_configuration_before_waiting_turn_resumes()
     };
     let start_pending_thread = || {
         test.thread_manager.start_thread(StartThreadOptions {
-            environments: Some(vec![pending_selection.clone()]),
+            environments: Some(vec![pending_selection.clone().into_request()]),
             ..StartThreadOptions::new(test.config.clone())
         })
     };
@@ -2414,7 +2415,7 @@ async fn future_pending_environment_can_finish_without_retargeting_the_active_tu
     let thread = test
         .thread_manager
         .start_thread(StartThreadOptions {
-            environments: Some(vec![active.clone()]),
+            environments: Some(vec![active.clone().into_request()]),
             ..StartThreadOptions::new(test.config.clone())
         })
         .await?
@@ -2528,7 +2529,7 @@ async fn active_environment_update_wakes_the_old_wait_with_the_new_selection() -
     let thread = test
         .thread_manager
         .start_thread(StartThreadOptions {
-            environments: Some(vec![original.clone()]),
+            environments: Some(vec![original.clone().into_request()]),
             ..StartThreadOptions::new(test.config.clone())
         })
         .await?
@@ -2797,7 +2798,7 @@ async fn ready_before_selection_resolves_resumed_thread_capability_root_after_wa
     let resumed = test
         .thread_manager
         .start_thread(StartThreadOptions {
-            environments: Some(vec![selection.clone()]),
+            environments: Some(vec![selection.clone().into_request()]),
             thread_extension_init,
             ..StartThreadOptions::new(test.config.clone())
         })
