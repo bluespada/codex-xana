@@ -374,6 +374,32 @@ mod tests {
     }
 
     #[test]
+    fn a_summarized_reasoning_item_replays_as_a_signed_thinking_block() {
+        // A provider that streams its thinking issues no summaries of its own,
+        // so the decoder records the text as the summary. It still has to
+        // replay as a signed thinking block.
+        let items = [ResponseItem::Reasoning {
+            id: None,
+            summary: vec![ReasoningItemReasoningSummary::SummaryText {
+                text: "weighing it".to_string(),
+            }],
+            content: None,
+            encrypted_content: Some("sig-1".to_string()),
+            internal_chat_message_metadata_passthrough: None,
+        }];
+        assert_eq!(
+            normalize(&items),
+            vec![Message::new(
+                Role::Assistant,
+                vec![Part::Thinking {
+                    text: "weighing it".to_string(),
+                    signature: Some("sig-1".to_string()),
+                }]
+            )]
+        );
+    }
+
+    #[test]
     fn a_redacted_reasoning_item_keeps_only_its_payload() {
         let items = [ResponseItem::Reasoning {
             id: None,

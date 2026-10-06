@@ -7,8 +7,23 @@
 use codex_protocol::ToolName;
 use codex_protocol::models::ContentItem;
 use codex_protocol::models::MessagePhase;
-use codex_protocol::models::ReasoningItemContent;
+use codex_protocol::models::ReasoningItemReasoningSummary;
 use codex_protocol::models::ResponseItem;
+
+/// The response item a decoder has announced and not closed yet.
+///
+/// The agent loop attributes every delta to the item the stream announced last,
+/// so a delta that belongs to another item has to close the open one before it
+/// announces its own. Providers interleave thinking with text, and a gateway may
+/// reorder or delay a block's stop, either of which would otherwise leave a
+/// delta with no item to belong to.
+#[derive(Clone, Copy, Default, PartialEq, Eq, Debug)]
+pub(crate) enum OpenItem {
+    #[default]
+    None,
+    Message,
+    Reasoning,
+}
 
 /// An assistant message with no text yet.
 ///
@@ -55,12 +70,16 @@ pub(crate) fn reasoning_finished(text: String, encrypted_content: Option<String>
 fn reasoning(text: String, encrypted_content: Option<String>) -> ResponseItem {
     ResponseItem::Reasoning {
         id: None,
-        summary: Vec::new(),
-        content: if text.is_empty() {
-            None
+        // A provider that streams its thinking reports raw text and no summary,
+        // so the text goes in the field the client shows and the Responses API
+        // fills for its own models. Raw content is a second view of the same
+        // text, and filling both would show it twice.
+        summary: if text.is_empty() {
+            Vec::new()
         } else {
-            Some(vec![ReasoningItemContent::ReasoningText { text }])
+            vec![ReasoningItemReasoningSummary::SummaryText { text }]
         },
+        content: None,
         encrypted_content,
         internal_chat_message_metadata_passthrough: None,
     }
@@ -100,6 +119,52 @@ fn function_call(call_id: &str, tool: &ToolName, arguments: String) -> ResponseI
     }
 }
 
+/// Asserts the item lifecycle the agent loop requires of a decoder: every delta
+/// arrives while the item it belongs to is the one the stream last announced,
+/// because that is the item the loop attributes it to. A delta with anything
+/// else open panics a debug build and is dropped in a release one.
+#[cfg(test)]
+pub(crate) fn assert_deltas_have_an_open_item(events: &[codex_api::ResponseEvent]) {
+    use codex_api::ResponseEvent;
+
+    /// The item the loop would be holding.
+    #[derive(Clone, Copy, PartialEq, Eq, Debug)]
+    enum Open {
+        None,
+        Message,
+        Reasoning,
+        Other,
+    }
+
+    fn kind(item: &ResponseItem) -> Open {
+        match item {
+            ResponseItem::Message { .. } => Open::Message,
+            ResponseItem::Reasoning { .. } => Open::Reasoning,
+            _ => Open::Other,
+        }
+    }
+
+    let mut open = Open::None;
+    for event in events {
+        match event {
+            ResponseEvent::OutputItemAdded(item) => open = kind(item),
+            ResponseEvent::OutputItemDone(_) => open = Open::None,
+            ResponseEvent::OutputTextDelta(text) => {
+                assert_eq!(open, Open::Message, "text {text:?} with {open:?} open");
+            }
+            ResponseEvent::ReasoningSummaryDelta { delta, .. }
+            | ResponseEvent::ReasoningContentDelta { delta, .. } => {
+                assert_eq!(
+                    open,
+                    Open::Reasoning,
+                    "reasoning {delta:?} with {open:?} open"
+                );
+            }
+            _ => {}
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -110,10 +175,13 @@ mod tests {
         assert!(matches!(
             item,
             ResponseItem::Reasoning {
-                content: Some(ref content),
+                ref summary,
+                content: None,
                 ref encrypted_content,
                 ..
-            } if content == &vec![ReasoningItemContent::ReasoningText { text: "weighing it".to_string() }]
+            } if summary == &vec![ReasoningItemReasoningSummary::SummaryText {
+                    text: "weighing it".to_string(),
+                }]
                 && encrypted_content.as_deref() == Some("sig-1")
         ));
     }
@@ -123,10 +191,11 @@ mod tests {
         assert!(matches!(
             reasoning_started(),
             ResponseItem::Reasoning {
+                summary,
                 content: None,
                 encrypted_content: None,
                 ..
-            }
+            } if summary.is_empty()
         ));
     }
 

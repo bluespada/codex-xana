@@ -286,7 +286,7 @@ async fn anthropic_messages_streams_thinking_before_the_answer() {
     ));
     assert!(matches!(
         events[2],
-        ResponseEvent::ReasoningContentDelta { ref delta, .. } if delta == "hmm"
+        ResponseEvent::ReasoningSummaryDelta { ref delta, .. } if delta == "hmm"
     ));
     assert!(matches!(
         events[3],

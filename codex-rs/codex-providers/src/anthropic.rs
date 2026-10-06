@@ -50,6 +50,7 @@ use crate::Part;
 use crate::ProviderError;
 use crate::Role;
 use crate::events;
+use crate::events::OpenItem;
 use crate::tools;
 use crate::tools::ToolAliases;
 use crate::transcript::coalesce;
@@ -230,7 +231,6 @@ pub struct AnthropicDecoder {
     tool_aliases: Arc<ToolAliases>,
     response_id: Option<String>,
     text: String,
-    text_started: bool,
     tool_uses: Vec<PartialToolUse>,
     stop_reason: Option<String>,
     input_tokens: i64,
@@ -242,7 +242,8 @@ pub struct AnthropicDecoder {
     reasoning_index: Option<usize>,
     reasoning_text: String,
     reasoning_signature: Option<String>,
-    reasoning_announced: bool,
+    /// The item the client has been told is open, if any.
+    open_item: OpenItem,
     completed: bool,
 }
 
@@ -351,13 +352,12 @@ impl AnthropicDecoder {
             ContentBlock::RedactedThinking(block) => {
                 // A redacted block has no deltas, only the payload the provider
                 // needs back, so it opens and closes at once.
-                self.open_reasoning(start.index);
-                let mut emitted = self.reasoning_began();
+                let mut emitted = self.close_open_item();
+                emitted.push(ResponseEvent::OutputItemAdded(events::reasoning_started()));
                 emitted.push(ResponseEvent::OutputItemDone(events::reasoning_finished(
                     String::new(),
                     Some(block.data),
                 )));
-                self.close_reasoning();
                 return emitted;
             }
             // Text starts on its first delta, and server-side tools are not
@@ -388,13 +388,7 @@ impl AnthropicDecoder {
     fn content_block_delta(&mut self, event: ContentBlockDeltaEvent) -> Vec<ResponseEvent> {
         match event.delta {
             ContentBlockDelta::TextDelta(delta) => {
-                let mut events = Vec::new();
-                if !self.text_started {
-                    self.text_started = true;
-                    events.push(ResponseEvent::OutputItemAdded(
-                        events::assistant_message_started(),
-                    ));
-                }
+                let mut events = self.open_message_item();
                 self.text.push_str(&delta.text);
                 events.push(ResponseEvent::OutputTextDelta(delta.text));
                 events
@@ -412,22 +406,22 @@ impl AnthropicDecoder {
                 }]
             }
             ContentBlockDelta::ThinkingDelta(delta) => {
-                if self.reasoning_index != Some(event.index) {
-                    // A block that announced nothing but its deltas.
-                    self.open_reasoning(event.index);
-                }
+                let mut emitted = self.open_reasoning_item(event.index);
                 self.reasoning_text.push_str(&delta.thinking);
-                let mut emitted = self.reasoning_began();
-                emitted.push(ResponseEvent::ReasoningContentDelta {
+                emitted.push(ResponseEvent::ReasoningSummaryDelta {
                     delta: delta.thinking,
-                    content_index: 0,
+                    summary_index: 0,
                 });
                 emitted
             }
             // The signature closes the thinking block the provider signed; it
             // is replayed with the text rather than shown.
             ContentBlockDelta::SignatureDelta(delta) => {
-                self.reasoning_signature = Some(delta.signature);
+                // A signature that arrives after its block closed belongs to
+                // the item that already went out.
+                if self.reasoning_index.is_some() {
+                    self.reasoning_signature = Some(delta.signature);
+                }
                 Vec::new()
             }
             // Citations have no representation in the response items Codex
@@ -453,23 +447,65 @@ impl AnthropicDecoder {
         self.reasoning_index = Some(index);
         self.reasoning_text.clear();
         self.reasoning_signature = None;
-        self.reasoning_announced = false;
     }
 
     fn close_reasoning(&mut self) {
         self.reasoning_index = None;
         self.reasoning_text.clear();
         self.reasoning_signature = None;
-        self.reasoning_announced = false;
     }
 
-    /// Announces the reasoning item an arriving delta belongs to, once.
-    fn reasoning_began(&mut self) -> Vec<ResponseEvent> {
-        if self.reasoning_announced {
+    /// Announces the assistant message item a text delta streams into, closing
+    /// the item that was open before it.
+    fn open_message_item(&mut self) -> Vec<ResponseEvent> {
+        if self.open_item == OpenItem::Message {
             return Vec::new();
         }
-        self.reasoning_announced = true;
-        vec![ResponseEvent::OutputItemAdded(events::reasoning_started())]
+        let mut events = self.close_open_item();
+        self.open_item = OpenItem::Message;
+        events.push(ResponseEvent::OutputItemAdded(
+            events::assistant_message_started(),
+        ));
+        events
+    }
+
+    /// Announces the reasoning item the block at `index` streams into, closing
+    /// the item that was open before it.
+    fn open_reasoning_item(&mut self, index: usize) -> Vec<ResponseEvent> {
+        if self.open_item == OpenItem::Reasoning && self.reasoning_index == Some(index) {
+            return Vec::new();
+        }
+        let mut events = self.close_open_item();
+        if self.reasoning_index != Some(index) {
+            // A block that announced nothing but its deltas.
+            self.open_reasoning(index);
+        }
+        self.open_item = OpenItem::Reasoning;
+        events.push(ResponseEvent::OutputItemAdded(events::reasoning_started()));
+        events
+    }
+
+    /// Closes the item the client has open, if any, so a delta from another
+    /// item cannot arrive while it is the one that item belongs to.
+    fn close_open_item(&mut self) -> Vec<ResponseEvent> {
+        match self.open_item {
+            OpenItem::None => Vec::new(),
+            OpenItem::Reasoning => self.flush_reasoning(),
+            OpenItem::Message => {
+                // Text that continues after an interleaved block is a new
+                // message; only the one that ends the turn is the answer.
+                self.open_item = OpenItem::None;
+                if self.text.is_empty() {
+                    return Vec::new();
+                }
+                vec![ResponseEvent::OutputItemDone(
+                    events::assistant_message_finished(
+                        std::mem::take(&mut self.text),
+                        MessagePhase::Commentary,
+                    ),
+                )]
+            }
+        }
     }
 
     /// Closes an open reasoning block, whether the stream said so or ended.
@@ -477,13 +513,18 @@ impl AnthropicDecoder {
         if self.reasoning_index.is_none() {
             return Vec::new();
         }
-        let mut emitted = self.reasoning_began();
-        emitted.push(ResponseEvent::OutputItemDone(events::reasoning_finished(
-            std::mem::take(&mut self.reasoning_text),
-            self.reasoning_signature.take(),
-        )));
+        // A block that streamed no deltas announced no item, so it owes none.
+        let announced = self.open_item == OpenItem::Reasoning;
+        let text = std::mem::take(&mut self.reasoning_text);
+        let signature = self.reasoning_signature.take();
         self.close_reasoning();
-        emitted
+        if !announced {
+            return Vec::new();
+        }
+        self.open_item = OpenItem::None;
+        vec![ResponseEvent::OutputItemDone(events::reasoning_finished(
+            text, signature,
+        ))]
     }
 
     fn message_delta(&mut self, event: MessageDeltaEvent) {
@@ -503,19 +544,24 @@ impl AnthropicDecoder {
         }
         self.completed = true;
 
-        // A stream that ends without closing its reasoning block still owes the
-        // item, and it belongs before the answer it explains.
-        let mut events = self.flush_reasoning();
+        // A stream that ends with an item open still owes it: a reasoning item
+        // belongs before the answer it explains, and the message that ends the
+        // turn is the answer.
+        let mut events = Vec::new();
         let tool_uses: Vec<PartialToolUse> = std::mem::take(&mut self.tool_uses)
             .into_iter()
             .filter(|tool_use| !tool_use.name.is_empty())
             .collect();
-        if !self.text.is_empty() {
+        if self.open_item == OpenItem::Reasoning {
+            events.extend(self.close_open_item());
+        }
+        if self.open_item == OpenItem::Message && !self.text.is_empty() {
             let phase = if tool_uses.is_empty() {
                 MessagePhase::FinalAnswer
             } else {
                 MessagePhase::Commentary
             };
+            self.open_item = OpenItem::None;
             events.push(ResponseEvent::OutputItemDone(
                 events::assistant_message_finished(std::mem::take(&mut self.text), phase),
             ));
@@ -610,6 +656,7 @@ mod tests {
     use codex_protocol::models::ContentItem;
     use codex_protocol::models::FunctionCallOutputPayload;
     use codex_protocol::models::ReasoningItemContent;
+    use codex_protocol::models::ReasoningItemReasoningSummary;
     use codex_protocol::models::ResponseItem;
     use codex_protocol::openai_models::ReasoningEffort;
     use codex_tools::ToolSpec;
@@ -902,21 +949,21 @@ mod tests {
         ));
         assert!(matches!(
             events[2],
-            ResponseEvent::ReasoningContentDelta { ref delta, content_index: 0 } if delta == "weigh"
+            ResponseEvent::ReasoningSummaryDelta { ref delta, summary_index: 0 } if delta == "weigh"
         ));
         assert!(matches!(
             events[3],
-            ResponseEvent::ReasoningContentDelta { ref delta, .. } if delta == "ing options"
+            ResponseEvent::ReasoningSummaryDelta { ref delta, .. } if delta == "ing options"
         ));
         assert!(matches!(
             events[4],
             ResponseEvent::OutputItemDone(ResponseItem::Reasoning {
-                ref content,
+                ref summary,
                 ref encrypted_content,
                 ..
-            }) if content == &Some(vec![ReasoningItemContent::ReasoningText {
+            }) if summary == &vec![ReasoningItemReasoningSummary::SummaryText {
                     text: "weighing options".to_string(),
-                }])
+                }]
                 && encrypted_content.as_deref() == Some("sig-1")
         ));
         assert!(matches!(
@@ -925,6 +972,57 @@ mod tests {
                 end_turn: Some(true),
                 ..
             }
+        ));
+    }
+
+    #[test]
+    fn text_after_a_late_thinking_block_keeps_an_item_open() {
+        // A gateway can send a thinking block after the text it follows, whose
+        // stop closes the reasoning item while the answer is still streaming.
+        // The text that continues owes the loop an item of its own.
+        let events = decoded(&[
+            r#"{"type":"message_start","message":{"id":"msg_6","type":"message","content":[],"model":"claude-test","role":"assistant","usage":{"input_tokens":3,"output_tokens":1}}}"#,
+            r#"{"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}}"#,
+            r#"{"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"Hel"}}"#,
+            r#"{"type":"content_block_start","index":1,"content_block":{"type":"thinking","thinking":"","signature":""}}"#,
+            r#"{"type":"content_block_delta","index":1,"delta":{"type":"thinking_delta","thinking":"why"}}"#,
+            r#"{"type":"content_block_stop","index":1}"#,
+            r#"{"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"lo"}}"#,
+            r#"{"type":"content_block_stop","index":0}"#,
+            r#"{"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":5}}"#,
+            r#"{"type":"message_stop"}"#,
+        ]);
+
+        crate::events::assert_deltas_have_an_open_item(&events);
+        assert!(events.iter().any(|event| matches!(
+            event,
+            ResponseEvent::OutputItemDone(ResponseItem::Reasoning { summary, .. })
+                if summary == &vec![ReasoningItemReasoningSummary::SummaryText { text: "why".to_string() }]
+        )));
+        let messages: Vec<&ResponseEvent> = events
+            .iter()
+            .filter(|event| {
+                matches!(
+                    event,
+                    ResponseEvent::OutputItemDone(ResponseItem::Message { .. })
+                )
+            })
+            .collect();
+        assert!(matches!(
+            messages.as_slice(),
+            [
+                ResponseEvent::OutputItemDone(ResponseItem::Message {
+                    phase: Some(MessagePhase::Commentary),
+                    content,
+                    ..
+                }),
+                ResponseEvent::OutputItemDone(ResponseItem::Message {
+                    phase: Some(MessagePhase::FinalAnswer),
+                    content: answer,
+                    ..
+                }),
+            ] if content == &vec![ContentItem::OutputText { text: "Hel".to_string() }]
+                && answer == &vec![ContentItem::OutputText { text: "lo".to_string() }]
         ));
     }
 

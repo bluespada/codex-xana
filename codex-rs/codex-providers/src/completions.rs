@@ -42,6 +42,7 @@ use crate::Part;
 use crate::ProviderError;
 use crate::Role;
 use crate::events;
+use crate::events::OpenItem;
 use crate::tools;
 use crate::tools::ToolAliases;
 use crate::transcript::coalesce_assistant;
@@ -210,10 +211,10 @@ pub struct ChatCompletionsDecoder {
     response_id: Option<String>,
     created: bool,
     text: String,
-    text_started: bool,
     /// Reasoning text, which the protocol reports but does not replay.
     reasoning: String,
-    reasoning_started: bool,
+    /// The item the client has been told is open, if any.
+    open_item: OpenItem,
     tool_calls: Vec<PartialToolCall>,
     finish_reason: Option<String>,
     usage: Option<TokenUsage>,
@@ -269,15 +270,13 @@ impl SseEventDecoder for ChatCompletionsDecoder {
         // but it is not replayed to the model: this protocol has no way to send
         // it back.
         if !chunk.reasoning.is_empty() {
-            if !self.reasoning_started {
-                self.reasoning_started = true;
-                events.push(ResponseEvent::OutputItemAdded(events::reasoning_started()));
-            }
+            let mut opening = self.open_reasoning_item();
             self.reasoning.push_str(&chunk.reasoning);
-            events.push(ResponseEvent::ReasoningContentDelta {
+            opening.push(ResponseEvent::ReasoningSummaryDelta {
                 delta: chunk.reasoning,
-                content_index: 0,
+                summary_index: 0,
             });
+            events.extend(opening);
         }
 
         // Codex requests one completion, so only the first choice is a turn.
@@ -288,12 +287,7 @@ impl SseEventDecoder for ChatCompletionsDecoder {
             self.finish_reason = Some(reason);
         }
         if let Some(text) = choice.delta.content.filter(|text| !text.is_empty()) {
-            if !self.text_started {
-                self.text_started = true;
-                events.push(ResponseEvent::OutputItemAdded(
-                    events::assistant_message_started(),
-                ));
-            }
+            events.extend(self.open_message_item());
             self.text.push_str(&text);
             events.push(ResponseEvent::OutputTextDelta(text));
         }
@@ -354,6 +348,67 @@ impl ChatCompletionsDecoder {
         }
     }
 
+    /// Announces the assistant message item a text delta streams into, closing
+    /// the item that was open before it.
+    fn open_message_item(&mut self) -> Vec<ResponseEvent> {
+        if self.open_item == OpenItem::Message {
+            return Vec::new();
+        }
+        let mut events = self.close_open_item();
+        self.open_item = OpenItem::Message;
+        events.push(ResponseEvent::OutputItemAdded(
+            events::assistant_message_started(),
+        ));
+        events
+    }
+
+    /// Announces the reasoning item a reasoning delta streams into, closing the
+    /// item that was open before it.
+    fn open_reasoning_item(&mut self) -> Vec<ResponseEvent> {
+        if self.open_item == OpenItem::Reasoning {
+            return Vec::new();
+        }
+        let mut events = self.close_open_item();
+        self.open_item = OpenItem::Reasoning;
+        events.push(ResponseEvent::OutputItemAdded(events::reasoning_started()));
+        events
+    }
+
+    /// Closes the item the client has open, if any, so a delta from another
+    /// item cannot arrive while it is the one that item belongs to.
+    fn close_open_item(&mut self) -> Vec<ResponseEvent> {
+        match self.open_item {
+            OpenItem::None => Vec::new(),
+            OpenItem::Reasoning => self.flush_reasoning(),
+            OpenItem::Message => {
+                // Text that continues after an interleaved block is a new
+                // message; only the one that ends the turn is the answer.
+                self.open_item = OpenItem::None;
+                if self.text.is_empty() {
+                    return Vec::new();
+                }
+                vec![ResponseEvent::OutputItemDone(
+                    events::assistant_message_finished(
+                        std::mem::take(&mut self.text),
+                        MessagePhase::Commentary,
+                    ),
+                )]
+            }
+        }
+    }
+
+    /// Closes the open reasoning item, whether the stream said so or ended.
+    fn flush_reasoning(&mut self) -> Vec<ResponseEvent> {
+        if self.open_item != OpenItem::Reasoning {
+            return Vec::new();
+        }
+        self.open_item = OpenItem::None;
+        vec![ResponseEvent::OutputItemDone(events::reasoning_finished(
+            std::mem::take(&mut self.reasoning),
+            None,
+        ))]
+    }
+
     /// The terminal events for this turn, produced once.
     fn complete(&mut self) -> Vec<ResponseEvent> {
         if self.completed {
@@ -362,22 +417,23 @@ impl ChatCompletionsDecoder {
         self.completed = true;
 
         let mut events = Vec::new();
-        if self.reasoning_started {
-            events.push(ResponseEvent::OutputItemDone(events::reasoning_finished(
-                std::mem::take(&mut self.reasoning),
-                None,
-            )));
-        }
         let calls: Vec<PartialToolCall> = std::mem::take(&mut self.tool_calls)
             .into_iter()
             .filter(|call| !call.name.is_empty())
             .collect();
-        if !self.text.is_empty() {
+        // A stream that ends with an item open still owes it: a reasoning item
+        // belongs before the answer it explains, and the message that ends the
+        // turn is the answer.
+        if self.open_item == OpenItem::Reasoning {
+            events.extend(self.close_open_item());
+        }
+        if self.open_item == OpenItem::Message && !self.text.is_empty() {
             let phase = if calls.is_empty() {
                 MessagePhase::FinalAnswer
             } else {
                 MessagePhase::Commentary
             };
+            self.open_item = OpenItem::None;
             events.push(ResponseEvent::OutputItemDone(
                 events::assistant_message_finished(std::mem::take(&mut self.text), phase),
             ));
@@ -626,7 +682,7 @@ mod tests {
     }
 
     use codex_protocol::models::ContentItem;
-    use codex_protocol::models::ReasoningItemContent;
+    use codex_protocol::models::ReasoningItemReasoningSummary;
     use codex_protocol::models::ResponseItem;
     use codex_protocol::openai_models::ReasoningEffort;
     use codex_tools::ToolSpec;
@@ -811,30 +867,72 @@ mod tests {
         ));
         assert!(matches!(
             events[2],
-            ResponseEvent::ReasoningContentDelta { ref delta, content_index: 0 } if delta == "weigh"
+            ResponseEvent::ReasoningSummaryDelta { ref delta, summary_index: 0 } if delta == "weigh"
         ));
         assert!(matches!(
             events[3],
-            ResponseEvent::ReasoningContentDelta { ref delta, .. } if delta == "ing"
+            ResponseEvent::ReasoningSummaryDelta { ref delta, .. } if delta == "ing"
         ));
+        // The reasoning item closes before the message opens, so the text that
+        // follows it is announced as the item it belongs to.
         assert!(matches!(
             events[4],
-            ResponseEvent::OutputItemAdded(ResponseItem::Message { .. })
-        ));
-        assert!(matches!(
-            events[6],
             ResponseEvent::OutputItemDone(ResponseItem::Reasoning {
-                ref content,
+                ref summary,
                 encrypted_content: None,
                 ..
-            }) if content == &Some(vec![ReasoningItemContent::ReasoningText {
+            }) if summary == &vec![ReasoningItemReasoningSummary::SummaryText {
                     text: "weighing".to_string(),
-                }])
+                }]
+        ));
+        assert!(matches!(
+            events[5],
+            ResponseEvent::OutputItemAdded(ResponseItem::Message { .. })
         ));
         assert!(matches!(
             events[7],
             ResponseEvent::OutputItemDone(ResponseItem::Message { ref content, .. })
                 if content == &vec![ContentItem::OutputText { text: "Hi".to_string() }]
+        ));
+        crate::events::assert_deltas_have_an_open_item(&events);
+    }
+
+    #[test]
+    fn reasoning_between_two_text_chunks_splits_the_messages() {
+        // A model that thinks again mid-answer owes the loop an item for the
+        // text that follows, or its deltas have nothing to attach to.
+        let events = decoded(&[
+            r#"{"id":"chatcmpl-4","choices":[{"delta":{"content":"Hel"},"finish_reason":null}]}"#,
+            r#"{"id":"chatcmpl-4","choices":[{"delta":{"reasoning_content":"why"},"finish_reason":null}]}"#,
+            r#"{"id":"chatcmpl-4","choices":[{"delta":{"content":"lo"},"finish_reason":"stop"}]}"#,
+            "[DONE]",
+        ]);
+
+        crate::events::assert_deltas_have_an_open_item(&events);
+        let messages: Vec<&ResponseEvent> = events
+            .iter()
+            .filter(|event| {
+                matches!(
+                    event,
+                    ResponseEvent::OutputItemDone(ResponseItem::Message { .. })
+                )
+            })
+            .collect();
+        assert!(matches!(
+            messages.as_slice(),
+            [
+                ResponseEvent::OutputItemDone(ResponseItem::Message {
+                    phase: Some(MessagePhase::Commentary),
+                    content,
+                    ..
+                }),
+                ResponseEvent::OutputItemDone(ResponseItem::Message {
+                    phase: Some(MessagePhase::FinalAnswer),
+                    content: answer,
+                    ..
+                }),
+            ] if content == &vec![ContentItem::OutputText { text: "Hel".to_string() }]
+                && answer == &vec![ContentItem::OutputText { text: "lo".to_string() }]
         ));
     }
 
