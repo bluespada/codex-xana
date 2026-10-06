@@ -102,18 +102,40 @@ pub const LEGACY_OLLAMA_CHAT_PROVIDER_ID: &str = "ollama-chat";
 pub const OLLAMA_CHAT_PROVIDER_REMOVED_ERROR: &str = "`ollama-chat` is no longer supported.\nHow to fix: replace `ollama-chat` with `ollama` in `model_provider`, `oss_provider`, or `--local-provider`.\nMore info: https://github.com/openai/codex/discussions/7782";
 
 /// Wire protocol that the provider speaks.
+///
+/// The serialized form is the accepted TOML value for `wire_api` in `config.toml`.
+/// The legacy spelling `responses` is still accepted as an alias for
+/// [`WireApi::OpenAiResponses`].
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, JsonSchema)]
-#[serde(rename_all = "lowercase")]
 pub enum WireApi {
-    /// The Responses API exposed by OpenAI at `/v1/responses`.
+    /// The Responses API exposed by OpenAI at `/v1/responses`. Codex posts to
+    /// `/responses` under a base URL that already carries the version.
     #[default]
-    Responses,
+    #[serde(rename = "openai-responses")]
+    OpenAiResponses,
+    /// The Chat Completions API exposed by OpenAI at `/v1/chat/completions`,
+    /// posted to as `/chat/completions` under that same base URL.
+    #[serde(rename = "openai-completions")]
+    OpenAiCompletions,
+    /// The Messages API exposed by Anthropic at `/v1/messages`, posted to as
+    /// `/messages` under a base URL such as `https://api.anthropic.com/v1`.
+    #[serde(rename = "anthropic-messages")]
+    AnthropicMessages,
 }
+
+/// Accepted `wire_api` spellings, used in error messages and schema documentation.
+pub const WIRE_API_VALUES: &[&str] = &[
+    "anthropic-messages",
+    "openai-completions",
+    "openai-responses",
+];
 
 impl fmt::Display for WireApi {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let value = match self {
-            Self::Responses => "responses",
+            Self::OpenAiResponses => "openai-responses",
+            Self::OpenAiCompletions => "openai-completions",
+            Self::AnthropicMessages => "anthropic-messages",
         };
         f.write_str(value)
     }
@@ -126,9 +148,12 @@ impl<'de> Deserialize<'de> for WireApi {
     {
         let value = String::deserialize(deserializer)?;
         match value.as_str() {
-            "responses" => Ok(Self::Responses),
+            // `responses` predates the multi-protocol spelling and stays valid.
+            "openai-responses" | "responses" => Ok(Self::OpenAiResponses),
+            "openai-completions" => Ok(Self::OpenAiCompletions),
+            "anthropic-messages" => Ok(Self::AnthropicMessages),
             "chat" => Err(serde::de::Error::custom(CHAT_WIRE_API_REMOVED_ERROR)),
-            _ => Err(serde::de::Error::unknown_variant(&value, &["responses"])),
+            _ => Err(serde::de::Error::unknown_variant(&value, WIRE_API_VALUES)),
         }
     }
 }
@@ -534,7 +559,7 @@ other non-default provider fields are not supported"
             auth: None,
             gateway_oauth: None,
             aws: None,
-            wire_api: WireApi::Responses,
+            wire_api: WireApi::OpenAiResponses,
             query_params: None,
             http_headers: Some(
                 [("version".to_string(), env!("CARGO_PKG_VERSION").into())]
@@ -586,7 +611,7 @@ other non-default provider fields are not supported"
                 credential_export: None,
                 auth_refresh: None,
             })),
-            wire_api: WireApi::Responses,
+            wire_api: WireApi::OpenAiResponses,
             query_params: None,
             http_headers: Some(HashMap::from([(
                 AMAZON_BEDROCK_MANTLE_CLIENT_AGENT_HEADER.to_string(),
@@ -679,11 +704,11 @@ pub fn built_in_model_providers(
         ),
         (
             OLLAMA_OSS_PROVIDER_ID,
-            create_oss_provider(DEFAULT_OLLAMA_PORT, WireApi::Responses),
+            create_oss_provider(DEFAULT_OLLAMA_PORT, WireApi::OpenAiResponses),
         ),
         (
             LMSTUDIO_OSS_PROVIDER_ID,
-            create_oss_provider(DEFAULT_LMSTUDIO_PORT, WireApi::Responses),
+            create_oss_provider(DEFAULT_LMSTUDIO_PORT, WireApi::OpenAiResponses),
         ),
     ]
     .into_iter()

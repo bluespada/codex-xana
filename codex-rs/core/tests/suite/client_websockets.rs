@@ -2645,7 +2645,7 @@ fn websocket_provider_with_connect_timeout(
         auth: None,
         gateway_oauth: None,
         aws: None,
-        wire_api: WireApi::Responses,
+        wire_api: WireApi::OpenAiResponses,
         query_params: None,
         http_headers: None,
         env_http_headers: None,

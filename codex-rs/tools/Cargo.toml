@@ -4,16 +4,16 @@ license.workspace = true
 name = "codex-tools"
 version.workspace = true
 
-[lints]
-workspace = true
+[lib]
+doctest = false
 
 [dependencies]
 bitflags = { workspace = true }
 codex-code-mode = { workspace = true }
 codex-connectors = { workspace = true }
+codex-extension-items = { workspace = true }
 codex-features = { workspace = true }
 codex-file-system = { workspace = true }
-codex-extension-items = { workspace = true }
 codex-protocol = { workspace = true }
 codex-utils-absolute-path = { workspace = true }
 codex-utils-output-truncation = { workspace = true }
@@ -36,5 +36,5 @@ urlencoding = { workspace = true }
 codex-utils-cargo-bin = { workspace = true }
 pretty_assertions = { workspace = true }
 
-[lib]
-doctest = false
+[lints]
+workspace = true

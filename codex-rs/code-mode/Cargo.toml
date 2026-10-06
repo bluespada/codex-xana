@@ -9,9 +9,6 @@ doctest = false
 name = "codex_code_mode"
 path = "src/lib.rs"
 
-[lints]
-workspace = true
-
 [dependencies]
 codex-code-mode-protocol = { workspace = true }
 codex-http-client = { workspace = true }
@@ -33,3 +30,6 @@ uuid = { workspace = true, features = ["v4"] }
 [dev-dependencies]
 pretty_assertions = { workspace = true }
 tokio = { workspace = true, features = ["test-util"] }
+
+[lints]
+workspace = true

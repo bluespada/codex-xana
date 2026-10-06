@@ -4,6 +4,9 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 
+[lib]
+doctest = false
+
 [dependencies]
 codex-http-client = { workspace = true }
 futures = { workspace = true }
@@ -21,6 +24,3 @@ tokio = { workspace = true, features = ["macros", "test-util"] }
 
 [lints]
 workspace = true
-
-[lib]
-doctest = false

@@ -68,6 +68,9 @@ pub enum ReasoningEffort {
     Max,
     Ultra,
     Persistent,
+    /// The model picks its own depth for the turn. This is a mode rather than a
+    /// level, so only a protocol that documents it understands the value.
+    Adaptive,
     /// A model-defined effort value that this client does not know yet.
     Custom(String),
 }
@@ -85,6 +88,7 @@ impl ReasoningEffort {
             Self::Max => "max",
             Self::Ultra => "ultra",
             Self::Persistent => "persistent",
+            Self::Adaptive => "adaptive",
             Self::Custom(effort) => effort,
         }
     }
@@ -152,6 +156,7 @@ impl FromStr for ReasoningEffort {
             "max" => Ok(Self::Max),
             "ultra" => Ok(Self::Ultra),
             "persistent" => Ok(Self::Persistent),
+            "adaptive" => Ok(Self::Adaptive),
             "" => Err("reasoning_effort must not be empty".to_string()),
             effort => Ok(Self::Custom(effort.to_string())),
         }
@@ -1398,6 +1403,12 @@ mod tests {
                 "future".to_string(),
             )
         );
+        // A mode rather than a level, so it round-trips like one.
+        assert_eq!(
+            "adaptive".parse::<ReasoningEffort>(),
+            Ok(ReasoningEffort::Adaptive)
+        );
+        assert_eq!(ReasoningEffort::Adaptive.to_string(), "adaptive");
     }
 
     #[test]

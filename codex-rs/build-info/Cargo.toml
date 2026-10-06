@@ -9,9 +9,6 @@ doctest = false
 name = "codex_build_info"
 path = "src/lib.rs"
 
-[lints]
-workspace = true
-
 [dependencies]
 codex-install-context = { workspace = true }
 semver = { workspace = true, features = ["serde"] }
@@ -22,3 +19,6 @@ sha2 = { workspace = true }
 pretty_assertions = { workspace = true }
 serde_json = { workspace = true }
 tempfile = { workspace = true }
+
+[lints]
+workspace = true

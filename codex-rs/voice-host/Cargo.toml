@@ -8,16 +8,6 @@ license.workspace = true
 name = "codex-voice-host"
 path = "src/main.rs"
 
-# These tests need a correctly linked helper and a matching prepared runtime.
-# Bazel supplies declared runtime inputs and runs this target automatically.
-# Cargo runs it explicitly with --test installed_client.
-[[test]]
-name = "installed_client"
-test = false
-
-[lints]
-workspace = true
-
 [dependencies]
 codex-process-hardening = { workspace = true }
 codex-realtime-webrtc = { workspace = true }
@@ -45,3 +35,13 @@ codex-utils-cargo-bin = { workspace = true }
 pretty_assertions = { workspace = true }
 tempfile = { workspace = true }
 tokio = { workspace = true, features = ["io-util", "macros", "process", "rt-multi-thread", "time"] }
+
+# These tests need a correctly linked helper and a matching prepared runtime.
+# Bazel supplies declared runtime inputs and runs this target automatically.
+# Cargo runs it explicitly with --test installed_client.
+[[test]]
+name = "installed_client"
+test = false
+
+[lints]
+workspace = true

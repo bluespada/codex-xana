@@ -8,8 +8,8 @@ license.workspace = true
 test = false
 doctest = false
 
-[lints]
-workspace = true
-
 [target.'cfg(windows)'.dependencies]
 dirs = { workspace = true }
+
+[lints]
+workspace = true

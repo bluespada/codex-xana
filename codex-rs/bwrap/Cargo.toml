@@ -8,12 +8,12 @@ license.workspace = true
 name = "bwrap"
 path = "src/main.rs"
 
-[lints]
-workspace = true
-
 [target.'cfg(target_os = "linux")'.dependencies]
 libc = { workspace = true }
 
 [build-dependencies]
 cc = "1"
 pkg-config = "0.3"
+
+[lints]
+workspace = true

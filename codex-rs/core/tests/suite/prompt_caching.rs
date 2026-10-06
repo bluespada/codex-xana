@@ -274,6 +274,7 @@ async fn prompt_tools_are_consistent_across_requests(
         "request_user_input",
         "apply_patch",
         "view_image",
+        "web_fetch",
         "tool_search",
         "web_search",
     ]);

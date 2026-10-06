@@ -9,9 +9,6 @@ name = "codex_memories_extension"
 path = "src/lib.rs"
 doctest = false
 
-[lints]
-workspace = true
-
 [dependencies]
 codex-core = { workspace = true }
 codex-extension-api = { workspace = true }
@@ -32,3 +29,6 @@ tokio = { workspace = true, features = ["fs"] }
 pretty_assertions = { workspace = true }
 tempfile = { workspace = true }
 tokio = { workspace = true, features = ["fs", "macros"] }
+
+[lints]
+workspace = true

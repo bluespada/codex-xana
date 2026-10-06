@@ -9,15 +9,12 @@ name = "codex_mcp"
 path = "src/lib.rs"
 doctest = false
 
-[lints]
-workspace = true
-
 [dependencies]
 anyhow = { workspace = true }
 arc-swap = { workspace = true }
 async-channel = { workspace = true }
-codex-async-utils = { workspace = true }
 codex-api = { workspace = true }
+codex-async-utils = { workspace = true }
 codex-config = { workspace = true }
 codex-connectors = { workspace = true }
 codex-diagnostics = { workspace = true }
@@ -50,3 +47,6 @@ insta = { workspace = true }
 pretty_assertions = { workspace = true }
 rmcp = { workspace = true, default-features = false, features = ["base64", "macros", "schemars", "server"] }
 tempfile = { workspace = true }
+
+[lints]
+workspace = true

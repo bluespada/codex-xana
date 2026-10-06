@@ -24,36 +24,38 @@ struct McpServerProcess {
 impl McpServerProcess {
     fn observe_running(pid: String) -> anyhow::Result<Self> {
         let process = cfg_select! {
-            unix => { Self { pid } }
-            windows => {{
-                use std::io;
-                use std::num::NonZeroU32;
-                use std::os::windows::io::FromRawHandle;
-                use std::os::windows::io::OwnedHandle;
+            unix => Self { pid },
+            windows => {
+                {
+                    use std::io;
+                    use std::num::NonZeroU32;
+                    use std::os::windows::io::FromRawHandle;
+                    use std::os::windows::io::OwnedHandle;
 
-                use anyhow::Context;
-                use windows_sys::Win32::System::Threading::OpenProcess;
-                use windows_sys::Win32::System::Threading::PROCESS_SYNCHRONIZE;
+                    use anyhow::Context;
+                    use windows_sys::Win32::System::Threading::OpenProcess;
+                    use windows_sys::Win32::System::Threading::PROCESS_SYNCHRONIZE;
 
-                let process_id = pid
-                    .parse::<NonZeroU32>()
-                    .with_context(|| format!("invalid MCP server PID {pid}"))?;
-                // SAFETY: The PID is nonzero, and the returned handle is checked before use.
-                let handle = unsafe {
-                    OpenProcess(
-                        PROCESS_SYNCHRONIZE,
-                        /*binherithandle*/ 0,
-                        process_id.get(),
-                    )
-                };
-                if handle.is_null() {
-                    return Err(io::Error::last_os_error())
-                        .with_context(|| format!("failed to open MCP server process {pid}"));
+                    let process_id = pid
+                        .parse::<NonZeroU32>()
+                        .with_context(|| format!("invalid MCP server PID {pid}"))?;
+                    // SAFETY: The PID is nonzero, and the returned handle is checked before use.
+                    let handle = unsafe {
+                        OpenProcess(
+                            PROCESS_SYNCHRONIZE,
+                            /*binherithandle*/ 0,
+                            process_id.get(),
+                        )
+                    };
+                    if handle.is_null() {
+                        return Err(io::Error::last_os_error())
+                            .with_context(|| format!("failed to open MCP server process {pid}"));
+                    }
+                    // SAFETY: OpenProcess returned a non-null owned process handle.
+                    let handle = unsafe { OwnedHandle::from_raw_handle(handle) };
+                    Self { pid, handle }
                 }
-                // SAFETY: OpenProcess returned a non-null owned process handle.
-                let handle = unsafe { OwnedHandle::from_raw_handle(handle) };
-                Self { pid, handle }
-            }}
+            }
         };
         let alive = process.is_alive()?;
         anyhow::ensure!(alive, "MCP server process {} is not running", process.pid);
@@ -62,47 +64,52 @@ impl McpServerProcess {
 
     fn is_alive(&self) -> anyhow::Result<bool> {
         cfg_select! {
-            unix => {{
+            unix => {
                 use core_test_support::process::process_is_alive;
 
                 let Self { pid } = self;
                 process_is_alive(pid)
-            }}
-            windows => {{
-                use std::io;
-                use std::os::windows::io::AsRawHandle;
+            }
+            windows => {
+                {
+                    use std::io;
+                    use std::os::windows::io::AsRawHandle;
 
-                use anyhow::Context;
-                use windows_sys::Win32::Foundation::WAIT_FAILED;
-                use windows_sys::Win32::Foundation::WAIT_OBJECT_0;
-                use windows_sys::Win32::Foundation::WAIT_TIMEOUT;
-                use windows_sys::Win32::System::Threading::WaitForSingleObject;
+                    use anyhow::Context;
+                    use windows_sys::Win32::Foundation::WAIT_FAILED;
+                    use windows_sys::Win32::Foundation::WAIT_OBJECT_0;
+                    use windows_sys::Win32::Foundation::WAIT_TIMEOUT;
+                    use windows_sys::Win32::System::Threading::WaitForSingleObject;
 
-                let Self { pid, handle } = self;
-                // SAFETY: The owned handle stays open for this nonblocking wait.
-                let wait_result = unsafe {
-                    WaitForSingleObject(handle.as_raw_handle(), /*dwmilliseconds*/ 0)
-                };
-                match wait_result {
-                    WAIT_TIMEOUT => Ok(true),
-                    WAIT_OBJECT_0 => Ok(false),
-                    WAIT_FAILED => Err(io::Error::last_os_error())
-                        .with_context(|| format!("failed to wait for MCP server process {pid}")),
-                    result => anyhow::bail!("unexpected wait result {result} for MCP server process {pid}"),
+                    let Self { pid, handle } = self;
+                    // SAFETY: The owned handle stays open for this nonblocking wait.
+                    let wait_result = unsafe {
+                        WaitForSingleObject(handle.as_raw_handle(), /*dwmilliseconds*/ 0)
+                    };
+                    match wait_result {
+                        WAIT_TIMEOUT => Ok(true),
+                        WAIT_OBJECT_0 => Ok(false),
+                        WAIT_FAILED => Err(io::Error::last_os_error()).with_context(|| {
+                            format!("failed to wait for MCP server process {pid}")
+                        }),
+                        result => anyhow::bail!(
+                            "unexpected wait result {result} for MCP server process {pid}"
+                        ),
+                    }
                 }
-            }}
+            }
         }
     }
 
     async fn wait_for_exit(&self) -> anyhow::Result<()> {
         cfg_select! {
-            unix => {{
+            unix => {
                 use core_test_support::process::wait_for_process_exit;
 
                 let Self { pid } = self;
                 wait_for_process_exit(pid).await
-            }}
-            windows => {{
+            }
+            windows => {
                 use anyhow::Context;
 
                 tokio::time::timeout(Duration::from_secs(2), async {
@@ -116,7 +123,7 @@ impl McpServerProcess {
                 })
                 .await
                 .context("timed out waiting for process to exit")?
-            }}
+            }
         }
     }
 }

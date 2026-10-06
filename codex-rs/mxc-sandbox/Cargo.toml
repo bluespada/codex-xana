@@ -4,15 +4,12 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 
-[lib]
-doctest = false
-
-[lints]
-workspace = true
-
 # This direct dependency pins MXC's transitive ETW dependency for Windows GNU linking.
 [package.metadata.cargo-shear]
 ignored = ["tracelogging"]
+
+[lib]
+doctest = false
 
 [dependencies]
 anyhow = { workspace = true }
@@ -42,3 +39,6 @@ windows-sys = { workspace = true, features = [
 [dev-dependencies]
 pretty_assertions = { workspace = true }
 tempfile = { workspace = true }
+
+[lints]
+workspace = true

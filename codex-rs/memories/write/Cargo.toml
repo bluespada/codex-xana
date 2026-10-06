@@ -9,15 +9,12 @@ name = "codex_memories_write"
 path = "src/lib.rs"
 doctest = false
 
-[lints]
-workspace = true
-
 [dependencies]
 anyhow = { workspace = true }
 chrono = { workspace = true }
 codex-backend-client = { workspace = true }
-codex-core = { workspace = true }
 codex-config = { workspace = true }
+codex-core = { workspace = true }
 codex-features = { workspace = true }
 codex-git-utils = { workspace = true }
 codex-login = { workspace = true }
@@ -47,3 +44,6 @@ pretty_assertions = { workspace = true }
 tempfile = { workspace = true }
 tokio = { workspace = true, features = ["fs", "macros"] }
 wiremock = { workspace = true }
+
+[lints]
+workspace = true

@@ -9,11 +9,11 @@ name = "codex_process_hardening"
 path = "src/lib.rs"
 doctest = false
 
-[lints]
-workspace = true
-
 [dependencies]
 libc = { workspace = true }
 
 [dev-dependencies]
 pretty_assertions = { workspace = true }
+
+[lints]
+workspace = true

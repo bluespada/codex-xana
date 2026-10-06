@@ -4,12 +4,12 @@ license.workspace = true
 name = "codex-shell-escalation"
 version.workspace = true
 
+[lib]
+doctest = false
+
 [[bin]]
 name = "codex-execve-wrapper"
 path = "src/bin/main_execve_wrapper.rs"
-
-[lints]
-workspace = true
 
 [dependencies]
 anyhow = { workspace = true }
@@ -37,5 +37,5 @@ tracing-subscriber = { workspace = true, features = ["env-filter", "fmt"] }
 pretty_assertions = { workspace = true }
 tempfile = { workspace = true }
 
-[lib]
-doctest = false
+[lints]
+workspace = true

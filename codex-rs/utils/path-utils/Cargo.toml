@@ -4,8 +4,8 @@ license.workspace = true
 name = "codex-utils-path"
 version.workspace = true
 
-[lints]
-workspace = true
+[lib]
+doctest = false
 
 [dependencies]
 codex-utils-absolute-path = { workspace = true }
@@ -23,5 +23,5 @@ windows-sys = { workspace = true, features = [
 pretty_assertions = { workspace = true }
 tempfile = { workspace = true }
 
-[lib]
-doctest = false
+[lints]
+workspace = true

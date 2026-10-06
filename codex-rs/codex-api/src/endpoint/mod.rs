@@ -1,3 +1,4 @@
+pub(crate) mod events;
 pub(crate) mod images;
 pub(crate) mod memories;
 pub(crate) mod models;
@@ -8,6 +9,7 @@ pub(crate) mod responses_websocket;
 pub(crate) mod search;
 mod session;
 
+pub use events::EventStreamClient;
 pub use images::ImageRequestError;
 pub use images::ImagesClient;
 pub use memories::MemoriesClient;

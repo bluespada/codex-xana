@@ -9,9 +9,6 @@ name = "codex_uds"
 path = "src/lib.rs"
 doctest = false
 
-[lints]
-workspace = true
-
 [dependencies]
 tokio = { workspace = true, features = ["fs", "net", "rt"] }
 
@@ -32,3 +29,6 @@ tokio = { workspace = true, features = [
     "macros",
     "rt-multi-thread",
 ] }
+
+[lints]
+workspace = true

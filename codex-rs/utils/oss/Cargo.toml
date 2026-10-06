@@ -4,8 +4,8 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 
-[lints]
-workspace = true
+[lib]
+doctest = false
 
 [dependencies]
 codex-core = { workspace = true }
@@ -13,5 +13,5 @@ codex-lmstudio = { workspace = true }
 codex-model-provider-info = { workspace = true }
 codex-ollama = { workspace = true }
 
-[lib]
-doctest = false
+[lints]
+workspace = true

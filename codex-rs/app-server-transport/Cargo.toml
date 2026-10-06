@@ -9,12 +9,7 @@ name = "codex_app_server_transport"
 path = "src/lib.rs"
 doctest = false
 
-[lints]
-workspace = true
-
 [dependencies]
-codex-http-client = { workspace = true }
-codex-websocket-client = { workspace = true }
 axum = { workspace = true, default-features = false, features = [
     "http1",
     "json",
@@ -25,6 +20,7 @@ base64 = { workspace = true }
 codex-api = { workspace = true }
 codex-app-server-protocol = { workspace = true }
 codex-core = { workspace = true }
+codex-http-client = { workspace = true }
 codex-login = { workspace = true }
 codex-model-provider = { workspace = true }
 codex-protocol = { workspace = true }
@@ -33,6 +29,7 @@ codex-uds = { workspace = true }
 codex-utils-absolute-path = { workspace = true }
 codex-utils-rustls-provider = { workspace = true }
 codex-websocket-auth = { workspace = true }
+codex-websocket-client = { workspace = true }
 futures = { workspace = true }
 gethostname = { workspace = true }
 httpdate = { workspace = true }
@@ -64,3 +61,6 @@ codex-config = { workspace = true }
 pretty_assertions = { workspace = true }
 tempfile = { workspace = true }
 tokio = { workspace = true, features = ["test-util"] }
+
+[lints]
+workspace = true

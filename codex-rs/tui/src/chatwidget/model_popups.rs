@@ -732,6 +732,7 @@ impl ChatWidget {
             ReasoningEffortConfig::Max => "Max".to_string(),
             ReasoningEffortConfig::Ultra => "Ultra".to_string(),
             ReasoningEffortConfig::Persistent => "Persistent".to_string(),
+            ReasoningEffortConfig::Adaptive => "Adaptive".to_string(),
             ReasoningEffortConfig::Custom(value) => value.clone(),
         }
     }

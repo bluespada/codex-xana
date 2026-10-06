@@ -294,6 +294,12 @@ fn item_to_cells(
                     "• ".dim(),
                     "  ",
                 )));
+            } else if let Some(text) = output.to_text() {
+                cells.push(Arc::new(crate::history_cell::new_function_call_output(
+                    &name,
+                    namespace.as_deref(),
+                    &text,
+                )));
             }
         }
         ThreadItem::Plan { text, .. } => {

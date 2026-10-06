@@ -375,11 +375,11 @@ async fn missing_process_host_falls_back_to_direct_tools_and_warns_once() -> Res
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn missing_process_host_keeps_code_mode_only_and_fails_closed() -> Result<()> {
+async fn missing_process_host_steps_code_mode_only_down_to_direct_tools() -> Result<()> {
     skip_if_no_network!(Ok(()));
 
     let server = responses::start_mock_server().await;
-    let builder = test_codex()
+    let mut builder = test_codex()
         .with_model("test-gpt-5.1-codex")
         .with_code_mode_host_program("codex-code-mode-host-does-not-exist".into())
         .with_config(|config| {
@@ -388,29 +388,25 @@ async fn missing_process_host_keeps_code_mode_only_and_fails_closed() -> Result<
                 .enable(Feature::CodeModeOnly)
                 .expect("code mode should be enabled");
         });
-    let (_test, follow_up_mock) = run_code_mode_turn_with_builder(
-        &server,
-        "Run required code mode",
-        "text('unreachable')",
-        builder,
-    )
-    .await?;
-    let request = follow_up_mock.single_request();
-    let tools = tool_names(&request.body_json());
+    let test = builder.build_with_auto_env(&server).await?;
+    let (body, warnings) = run_unavailable_code_mode_turn(&server, &test).await?;
+    let tools = tool_names(&body);
     assert!(
-        tools.iter().any(|name| name == "exec") && tools.iter().any(|name| name == "wait"),
-        "code-mode-only must retain code-mode tools: {tools:?}"
+        tools.iter().all(|name| name != "exec" && name != "wait"),
+        "a missing host must not expose code-mode tools: {tools:?}"
     );
     assert!(
         tools
             .iter()
-            .all(|name| !matches!(name.as_str(), "shell" | "exec_command")),
-        "code-mode-only must never expose direct shell tools: {tools:?}"
+            .any(|name| matches!(name.as_str(), "shell" | "exec_command")),
+        "code-mode-only must step down to direct tools: {tools:?}"
     );
-    let (output, _) = custom_tool_output_body_and_success(&request, "call-1");
     assert!(
-        output.contains("codex-code-mode-host-does-not-exist"),
-        "code-mode-only must report the host failure: {output}"
+        warnings.iter().any(|warning| {
+            warning.contains("Code Mode is unavailable")
+                && warning.contains("Falling back to direct tools")
+        }),
+        "the direct fallback should be reported: {warnings:?}"
     );
 
     Ok(())

@@ -16,6 +16,7 @@ use crate::tools::registry::ToolArgumentDiffConsumer;
 use crate::tools::registry::ToolRegistry;
 #[cfg(test)]
 use crate::tools::spec_plan::finalize_tool_router;
+use codex_protocol::DEFAULT_FUNCTION_NAMESPACE;
 use codex_protocol::models::ResponseItem;
 use codex_protocol::models::SearchToolCallParams;
 #[cfg(test)]
@@ -23,6 +24,7 @@ use codex_protocol::openai_models::ModelInfo;
 use codex_protocol::openai_models::ToolMode;
 use codex_tools::DiscoverableTool;
 use codex_tools::ResponsesApiNamespaceTool;
+use codex_tools::TOOL_SEARCH_TOOL_NAME;
 use codex_tools::ToolName;
 use codex_tools::ToolSpec;
 use std::borrow::Cow;
@@ -255,6 +257,25 @@ impl ToolRouter {
                 call_id,
                 ..
             } => {
+                // A protocol with no tool-search item type sends discovery as
+                // an ordinary function call, and the registry entry behind it
+                // takes a parsed query rather than a payload string.
+                let plain_namespace = namespace.as_deref().is_none_or(str::is_empty)
+                    || namespace.as_deref() == Some(DEFAULT_FUNCTION_NAMESPACE);
+                if plain_namespace && name == TOOL_SEARCH_TOOL_NAME {
+                    let arguments: SearchToolCallParams = serde_json::from_str(&arguments)
+                        .map_err(|err| {
+                            FunctionCallError::RespondToModel(format!(
+                                "failed to parse tool_search arguments: {err}"
+                            ))
+                        })?;
+                    return Ok(Some(ToolCall {
+                        tool_name: ToolName::plain(TOOL_SEARCH_TOOL_NAME),
+                        call_id,
+                        payload: ToolPayload::ToolSearch { arguments },
+                        encrypted_function_args,
+                    }));
+                }
                 let tool_name = ToolName::new(namespace, name).with_default_namespace();
                 Ok(Some(ToolCall {
                     tool_name,
@@ -276,7 +297,7 @@ impl ToolRouter {
                         ))
                     })?;
                 Ok(Some(ToolCall {
-                    tool_name: ToolName::plain("tool_search"),
+                    tool_name: ToolName::plain(TOOL_SEARCH_TOOL_NAME),
                     call_id,
                     payload: ToolPayload::ToolSearch { arguments },
                     encrypted_function_args: None,
@@ -297,6 +318,23 @@ impl ToolRouter {
             })),
             _ => Ok(None),
         }
+    }
+
+    /// The registered tool a decoded name stands for.
+    ///
+    /// A protocol that carries one flat name per tool cannot say which namespace
+    /// a call belongs to, and a tool the model found through the search tool may
+    /// never have been declared in the request. Both arrive as a
+    /// default-namespace name that no registration answers to, so the flat
+    /// spelling of the registered tools is tried before the call is treated as
+    /// one to a tool that does not exist.
+    fn resolve_tool_name(&self, tool_name: ToolName) -> ToolName {
+        if !tool_name.is_default_namespace() || self.registry.tool(&tool_name).is_some() {
+            return tool_name;
+        }
+        self.registry
+            .resolve_flat_name(&tool_name.name)
+            .unwrap_or(tool_name)
     }
 
     #[allow(dead_code)]
@@ -363,6 +401,7 @@ impl ToolRouter {
             payload,
             ..
         } = call;
+        let tool_name = self.resolve_tool_name(tool_name);
 
         // Keep the legacy ToolInvocation.turn field tied to the same request state until handlers migrate.
         let turn = Arc::clone(&step_context.turn);

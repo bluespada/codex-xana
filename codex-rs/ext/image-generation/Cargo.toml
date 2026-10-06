@@ -9,9 +9,6 @@ name = "codex_image_generation_extension"
 path = "src/lib.rs"
 doctest = false
 
-[lints]
-workspace = true
-
 [dependencies]
 base64 = { workspace = true }
 codex-api = { workspace = true }
@@ -37,3 +34,6 @@ tracing = { workspace = true }
 [dev-dependencies]
 pretty_assertions = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt"] }
+
+[lints]
+workspace = true

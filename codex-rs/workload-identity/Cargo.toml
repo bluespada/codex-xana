@@ -9,9 +9,6 @@ doctest = false
 name = "codex_workload_identity"
 path = "src/lib.rs"
 
-[lints]
-workspace = true
-
 [dependencies]
 codex-http-client = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
@@ -25,3 +22,6 @@ pretty_assertions = { workspace = true }
 tempfile = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 wiremock = { workspace = true }
+
+[lints]
+workspace = true

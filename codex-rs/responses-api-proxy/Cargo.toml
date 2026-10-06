@@ -13,9 +13,6 @@ doctest = false
 name = "codex-responses-api-proxy"
 path = "src/main.rs"
 
-[lints]
-workspace = true
-
 [dependencies]
 anyhow = { workspace = true }
 clap = { workspace = true, features = ["derive"] }
@@ -30,3 +27,6 @@ zeroize = { workspace = true }
 
 [dev-dependencies]
 pretty_assertions = { workspace = true }
+
+[lints]
+workspace = true

@@ -9,12 +9,12 @@ name = "codex_mermaid"
 path = "src/lib.rs"
 doctest = false
 
-[lints]
-workspace = true
-
 [dependencies]
 unicode-width = { workspace = true }
 
 [dev-dependencies]
 insta = { workspace = true }
 pretty_assertions = { workspace = true }
+
+[lints]
+workspace = true

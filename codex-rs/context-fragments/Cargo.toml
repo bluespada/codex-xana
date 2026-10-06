@@ -9,9 +9,6 @@ name = "codex_context_fragments"
 path = "src/lib.rs"
 doctest = false
 
-[lints]
-workspace = true
-
 [dependencies]
 codex-protocol = { workspace = true }
 codex-utils-string = { workspace = true }
@@ -19,3 +16,6 @@ serde_json = { workspace = true }
 
 [dev-dependencies]
 pretty_assertions = { workspace = true }
+
+[lints]
+workspace = true

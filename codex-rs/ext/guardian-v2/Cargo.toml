@@ -9,9 +9,6 @@ name = "codex_guardian_v2"
 path = "src/lib.rs"
 doctest = false
 
-[lints]
-workspace = true
-
 [dependencies]
 anyhow = { workspace = true }
 codex-analytics = { workspace = true }
@@ -27,8 +24,8 @@ codex-history = { workspace = true }
 codex-http-client = { workspace = true }
 codex-login = { workspace = true }
 codex-model-provider = { workspace = true }
-codex-protocol = { workspace = true }
 codex-prompts = { workspace = true }
+codex-protocol = { workspace = true }
 dirs = { workspace = true }
 http = { workspace = true }
 serde_json = { workspace = true }
@@ -46,3 +43,6 @@ tempfile = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 wiremock = { workspace = true }
 zstd = { workspace = true }
+
+[lints]
+workspace = true

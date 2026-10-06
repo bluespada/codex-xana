@@ -4,8 +4,8 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 
-[lints]
-workspace = true
+[lib]
+doctest = false
 
 [dependencies]
 codex-protocol = { workspace = true }
@@ -15,5 +15,5 @@ codex-utils-path-uri = { workspace = true }
 codex-utils-absolute-path = { workspace = true }
 pretty_assertions = { workspace = true }
 
-[lib]
-doctest = false
+[lints]
+workspace = true

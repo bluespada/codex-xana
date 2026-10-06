@@ -4,24 +4,26 @@ license.workspace = true
 name = "codex-core"
 version.workspace = true
 
+[package.metadata.cargo-shear]
+ignored = ["openssl-sys"]
+ignored-paths = ["tests/remote_env_windows/*.rs"]
+
 [lib]
 name = "codex_core"
 path = "src/lib.rs"
 
-[lints]
-workspace = true
-
 [dependencies]
-codex-utils-process = { workspace = true }
 anyhow = { workspace = true }
 arc-swap = { workspace = true }
 async-channel = { workspace = true }
 base64 = { workspace = true }
 bm25 = { workspace = true }
 chrono = { workspace = true, features = ["serde"] }
-codex-analytics = { workspace = true }
 codex-agent-graph-store = { workspace = true }
+codex-agent-message-board-client = { workspace = true }
+codex-agent-message-board-extension = { workspace = true }
 codex-agent-roles = { workspace = true }
+codex-analytics = { workspace = true }
 codex-api = { workspace = true }
 codex-app-server-protocol = { workspace = true }
 codex-apply-patch = { workspace = true }
@@ -29,24 +31,18 @@ codex-async-utils = { workspace = true }
 codex-attachment-store = { workspace = true }
 codex-client = { workspace = true }
 codex-code-mode = { workspace = true }
+codex-config = { workspace = true }
 codex-connectors = { workspace = true }
 codex-context-fragments = { workspace = true }
-codex-config = { workspace = true }
 codex-core-plugins = { workspace = true }
 codex-diagnostics = { workspace = true }
 codex-exec-server = { workspace = true }
+codex-execpolicy = { workspace = true }
 codex-extension-api = { workspace = true }
 codex-extension-items = { workspace = true }
 codex-features = { workspace = true }
 codex-feedback = { workspace = true }
 codex-file-system = { workspace = true }
-codex-login = { workspace = true }
-codex-memories-read = { workspace = true }
-codex-mcp = { workspace = true }
-codex-model-provider-info = { workspace = true }
-codex-models-manager = { workspace = true }
-codex-shell-command = { workspace = true }
-codex-execpolicy = { workspace = true }
 codex-git-utils = { workspace = true }
 codex-guardian-context = { workspace = true }
 codex-guardian-reviewer = { workspace = true }
@@ -54,22 +50,27 @@ codex-history = { workspace = true }
 codex-hooks = { workspace = true }
 codex-http-client = { workspace = true }
 codex-install-context = { workspace = true }
+codex-login = { workspace = true }
+codex-mcp = { workspace = true }
+codex-memories-read = { workspace = true }
+codex-model-provider = { workspace = true }
+codex-model-provider-info = { workspace = true }
+codex-models-manager = { workspace = true }
 codex-network-proxy = { workspace = true }
 codex-otel = { workspace = true }
 codex-plugin = { workspace = true }
-codex-model-provider = { workspace = true }
-codex-protocol = { workspace = true }
-codex-response-debug-context = { workspace = true }
 codex-prompts = { workspace = true }
+codex-protocol = { workspace = true }
+codex-providers = { workspace = true }
+codex-response-debug-context = { workspace = true }
+codex-rmcp-client = { workspace = true }
 codex-rollout = { workspace = true }
 codex-rollout-trace = { workspace = true }
-codex-rmcp-client = { workspace = true }
 codex-sandboxing = { workspace = true }
+codex-shell-command = { workspace = true }
 codex-skills = { workspace = true }
 codex-skills-extension = { workspace = true }
 codex-state = { workspace = true }
-codex-agent-message-board-extension = { workspace = true }
-codex-agent-message-board-client = { workspace = true }
 codex-terminal-detection = { workspace = true }
 codex-thread-store = { workspace = true }
 codex-tools = { workspace = true }
@@ -77,15 +78,16 @@ codex-utils-absolute-path = { workspace = true }
 codex-utils-audio = { workspace = true }
 codex-utils-cache = { workspace = true }
 codex-utils-git-discovery = { workspace = true }
-codex-utils-image = { workspace = true }
 codex-utils-home-dir = { workspace = true }
+codex-utils-image = { workspace = true }
 codex-utils-output-truncation = { workspace = true }
 codex-utils-path = { workspace = true }
 codex-utils-path-uri = { workspace = true }
 codex-utils-plugins = { workspace = true }
+codex-utils-process = { workspace = true }
 codex-utils-pty = { workspace = true }
-codex-utils-string = { workspace = true }
 codex-utils-stream-parser = { workspace = true }
+codex-utils-string = { workspace = true }
 codex-windows-sandbox = { package = "codex-windows-sandbox", path = "../windows-sandbox-rs" }
 dirs = { workspace = true }
 dunce = { workspace = true }
@@ -119,8 +121,8 @@ tokio = { workspace = true, features = [
     "rt-multi-thread",
     "signal",
 ] }
-tokio-util = { workspace = true, features = ["rt"] }
 tokio-tungstenite = { workspace = true }
+tokio-util = { workspace = true, features = ["rt"] }
 toml = { workspace = true }
 toml_edit = { workspace = true }
 tracing = { workspace = true, features = ["log"] }
@@ -130,22 +132,22 @@ which = { workspace = true }
 whoami = { workspace = true }
 
 # Build OpenSSL from source for musl builds.
-[target.x86_64-unknown-linux-musl.dependencies]
-openssl-sys = { workspace = true, features = ["vendored"] }
-
-# Build OpenSSL from source for musl builds.
 [target.aarch64-unknown-linux-musl.dependencies]
 openssl-sys = { workspace = true, features = ["vendored"] }
 
 [target.'cfg(unix)'.dependencies]
 codex-shell-escalation = { workspace = true }
 
+# Build OpenSSL from source for musl builds.
+[target.x86_64-unknown-linux-musl.dependencies]
+openssl-sys = { workspace = true, features = ["vendored"] }
+
 [dev-dependencies]
 assert_cmd = { workspace = true }
 assert_matches = { workspace = true }
 codex-exec-server-test-support = { workspace = true }
-codex-image-generation-extension = { workspace = true }
 codex-home = { workspace = true }
+codex-image-generation-extension = { workspace = true }
 codex-mcp-extension = { workspace = true }
 codex-otel = { workspace = true }
 codex-test-binary-support = { workspace = true }
@@ -158,15 +160,15 @@ ctor = { workspace = true }
 insta = { workspace = true }
 maplit = { workspace = true }
 opentelemetry = { workspace = true }
-predicates = { workspace = true }
-pretty_assertions = { workspace = true }
-test-case = "3.3.1"
 opentelemetry_sdk = { workspace = true, features = [
     "experimental_metrics_custom_reader",
     "metrics",
 ] }
+predicates = { workspace = true }
+pretty_assertions = { workspace = true }
 serial_test = { workspace = true }
 tempfile = { workspace = true }
+test-case = "3.3.1"
 test-log = { workspace = true }
 tracing-opentelemetry = { workspace = true }
 tracing-subscriber = { workspace = true }
@@ -178,6 +180,5 @@ zstd = { workspace = true }
 [target.'cfg(windows)'.dev-dependencies]
 windows-sys = { workspace = true, features = ["Win32_Foundation", "Win32_System_Threading"] }
 
-[package.metadata.cargo-shear]
-ignored = ["openssl-sys"]
-ignored-paths = ["tests/remote_env_windows/*.rs"]
+[lints]
+workspace = true

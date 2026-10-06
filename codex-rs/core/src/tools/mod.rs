@@ -84,16 +84,21 @@ pub(crate) fn requested_tool_mode(turn_context: &TurnContext, model_info: &Model
     })
 }
 
+/// Resolve the tool surface for the turn, stepping code mode down when it cannot run.
+///
+/// Both code-mode tiers execute cells in the standalone host process, so a missing or
+/// disabled host takes out `CodeMode` and `CodeModeOnly` in the same step and the turn
+/// falls back to direct tools. `code_mode.disable_in_process_fallback` keeps the failure
+/// closed for operators who would rather see no tools than the direct tool surface.
 pub(crate) fn effective_tool_mode(turn_context: &TurnContext, model_info: &ModelInfo) -> ToolMode {
     let requested_tool_mode = requested_tool_mode(turn_context, model_info);
     if !turn_context.code_mode_available
-        && requested_tool_mode == ToolMode::CodeMode
+        && requested_tool_mode != ToolMode::Direct
         && !turn_context.config.code_mode.disable_in_process_fallback
     {
-        ToolMode::Direct
-    } else {
-        requested_tool_mode
+        return ToolMode::Direct;
     }
+    requested_tool_mode
 }
 
 /// Format the combined exec output for sending back to the model.
@@ -145,5 +150,63 @@ fn build_content_with_timeout(exec_output: &ExecToolCallOutput) -> String {
         )
     } else {
         exec_output.aggregated_output.text.clone()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::Arc;
+
+    use super::effective_tool_mode;
+    use super::requested_tool_mode;
+    use crate::session::tests::make_session_and_context;
+    use crate::session::turn_context::TurnContext;
+    use codex_protocol::openai_models::ModelInfo;
+    use codex_protocol::openai_models::ToolMode;
+
+    fn code_mode_only_model_info(turn: &TurnContext) -> ModelInfo {
+        let mut model_info = (**turn.model_info()).clone();
+        model_info.tool_mode = Some(ToolMode::CodeModeOnly);
+        model_info
+    }
+
+    #[tokio::test]
+    async fn a_missing_code_mode_host_steps_code_mode_only_down_to_direct_tools() {
+        let (_, mut turn) = make_session_and_context().await;
+        turn.code_mode_available = false;
+        let model_info = code_mode_only_model_info(&turn);
+
+        assert_eq!(
+            requested_tool_mode(&turn, &model_info),
+            ToolMode::CodeModeOnly
+        );
+        assert_eq!(effective_tool_mode(&turn, &model_info), ToolMode::Direct);
+    }
+
+    #[tokio::test]
+    async fn an_available_host_keeps_the_requested_code_mode() {
+        let (_, mut turn) = make_session_and_context().await;
+        turn.code_mode_available = true;
+        let model_info = code_mode_only_model_info(&turn);
+
+        assert_eq!(
+            effective_tool_mode(&turn, &model_info),
+            ToolMode::CodeModeOnly
+        );
+    }
+
+    #[tokio::test]
+    async fn fail_closed_keeps_code_mode_only_without_a_host() {
+        let (_, mut turn) = make_session_and_context().await;
+        turn.code_mode_available = false;
+        Arc::make_mut(&mut turn.config)
+            .code_mode
+            .disable_in_process_fallback = true;
+        let model_info = code_mode_only_model_info(&turn);
+
+        assert_eq!(
+            effective_tool_mode(&turn, &model_info),
+            ToolMode::CodeModeOnly
+        );
     }
 }

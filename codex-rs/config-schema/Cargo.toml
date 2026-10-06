@@ -8,10 +8,10 @@ license.workspace = true
 name = "codex-write-config-schema"
 path = "src/main.rs"
 
-[lints]
-workspace = true
-
 [dependencies]
 anyhow = { workspace = true }
 clap = { workspace = true, features = ["derive"] }
 codex-config = { workspace = true }
+
+[lints]
+workspace = true

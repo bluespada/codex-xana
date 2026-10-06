@@ -5,6 +5,11 @@ edition.workspace = true
 license.workspace = true
 autobins = false
 
+[lib]
+name = "codex_tui"
+path = "src/lib.rs"
+doctest = false
+
 [[bin]]
 name = "codex-tui"
 path = "src/main.rs"
@@ -13,16 +18,7 @@ path = "src/main.rs"
 name = "md-events"
 path = "src/bin/md-events.rs"
 
-[lib]
-name = "codex_tui"
-path = "src/lib.rs"
-doctest = false
-
-[lints]
-workspace = true
-
 [dependencies]
-codex-build-info = { workspace = true }
 anyhow = { workspace = true }
 axum = { workspace = true, default-features = false, features = ["http1", "tokio"] }
 base64 = { workspace = true }
@@ -34,19 +30,20 @@ codex-app-server-daemon = { workspace = true }
 codex-app-server-protocol = { workspace = true }
 codex-arg0 = { workspace = true }
 codex-backend-client = { workspace = true }
-codex-install-context = { workspace = true }
+codex-build-info = { workspace = true }
 codex-cloud-config = { workspace = true }
 codex-config = { workspace = true }
-codex-context-fragments = { workspace = true }
 codex-connectors = { workspace = true }
+codex-context-fragments = { workspace = true }
 codex-core-plugins = { workspace = true }
-codex-history = { workspace = true }
 codex-exec-server = { workspace = true }
 codex-features = { workspace = true }
 codex-feedback = { workspace = true }
 codex-file-search = { workspace = true }
 codex-git-utils = { workspace = true }
+codex-history = { workspace = true }
 codex-http-client = { workspace = true }
+codex-install-context = { workspace = true }
 codex-login = { workspace = true }
 codex-mermaid = { workspace = true }
 codex-message-history = { workspace = true }
@@ -57,16 +54,14 @@ codex-otel = { workspace = true }
 codex-plugin = { workspace = true }
 codex-protocol = { workspace = true }
 codex-realtime-webrtc = { workspace = true }
-futures = { workspace = true }
 codex-rollout = { workspace = true }
 codex-sandboxing = { workspace = true }
 codex-shell-command = { workspace = true }
 codex-state = { workspace = true }
 codex-terminal-detection = { workspace = true }
-codex-worktree = { workspace = true }
-codex-utils-approval-presets = { workspace = true }
 codex-uds = { workspace = true }
 codex-utils-absolute-path = { workspace = true }
+codex-utils-approval-presets = { workspace = true }
 codex-utils-cli = { workspace = true }
 codex-utils-elapsed = { workspace = true }
 codex-utils-fuzzy-match = { workspace = true }
@@ -78,12 +73,16 @@ codex-utils-plugins = { workspace = true }
 codex-utils-sandbox-summary = { workspace = true }
 codex-utils-sleep-inhibitor = { workspace = true }
 codex-utils-string = { workspace = true }
+
+codex-windows-sandbox = { workspace = true }
+codex-worktree = { workspace = true }
 color-eyre = { workspace = true }
 crossterm = { workspace = true, features = ["bracketed-paste", "event-stream"] }
 derive_more = { workspace = true, features = ["is_variant"] }
 diffy = { workspace = true }
 dirs = { workspace = true }
 dunce = { workspace = true }
+futures = { workspace = true }
 image = { workspace = true, features = ["jpeg", "png", "gif", "webp"] }
 itertools = { workspace = true }
 lazy_static = { workspace = true }
@@ -107,6 +106,7 @@ shlex = { workspace = true }
 strum = { workspace = true }
 strum_macros = { workspace = true }
 supports-color = { workspace = true }
+syntect = { version = "5", default-features = false, features = ["parsing", "plist-load", "regex-onig"] }
 tempfile = { workspace = true }
 textwrap = { workspace = true }
 thiserror = { workspace = true }
@@ -120,33 +120,35 @@ tokio = { workspace = true, features = [
     "time",
 ] }
 tokio-stream = { workspace = true, features = ["sync"] }
+tokio-util = { workspace = true, features = ["time"] }
 toml = { workspace = true }
 toml_edit = { workspace = true }
 tracing = { workspace = true, features = ["log"] }
 tracing-appender = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["env-filter"] }
-syntect = { version = "5", default-features = false, features = ["parsing", "plist-load", "regex-onig"] }
 two-face = { version = "0.5", default-features = false, features = ["syntect-onig"] }
 unicode-segmentation = { workspace = true }
 unicode-width = { workspace = true }
 url = { workspace = true }
 urlencoding = { workspace = true }
-webbrowser = { workspace = true }
 uuid = { workspace = true }
+webbrowser = { workspace = true }
 
-codex-windows-sandbox = { workspace = true }
-tokio-util = { workspace = true, features = ["time"] }
+# Clipboard support via `arboard` is not available on Android/Termux.
+# Only include it for non-Android targets so the crate builds on Android.
+[target.'cfg(not(target_os = "android"))'.dependencies]
+arboard = { workspace = true }
 
-[target.'cfg(unix)'.dependencies]
-libc = { workspace = true }
+[target.'cfg(target_os = "linux")'.dependencies]
+# Keep the same executor features as the credential store, which also uses zbus.
+zbus = "4.4.0"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2-app-kit = { version = "0.3.2", default-features = false, features = ["std", "NSAccessibility", "NSWorkspace"] }
 objc2-foundation = { version = "0.3.2", default-features = false, features = ["std", "NSDateFormatter", "NSFormatter", "NSLocale", "NSString"] }
 
-[target.'cfg(target_os = "linux")'.dependencies]
-# Keep the same executor features as the credential store, which also uses zbus.
-zbus = "4.4.0"
+[target.'cfg(unix)'.dependencies]
+libc = { workspace = true }
 
 [target.'cfg(windows)'.dependencies]
 which = { workspace = true }
@@ -165,19 +167,13 @@ windows-sys = { workspace = true, features = [
 ] }
 winsplit = "0.1"
 
-# Clipboard support via `arboard` is not available on Android/Termux.
-# Only include it for non-Android targets so the crate builds on Android.
-[target.'cfg(not(target_os = "android"))'.dependencies]
-arboard = { workspace = true }
-
-
 [dev-dependencies]
 app_test_support = { workspace = true }
-codex-mcp = { workspace = true }
-core_test_support = { workspace = true }
-codex-utils-cargo-bin = { workspace = true }
 assert_matches = { workspace = true }
 chrono = { workspace = true, features = ["serde"] }
+codex-mcp = { workspace = true }
+codex-utils-cargo-bin = { workspace = true }
+core_test_support = { workspace = true }
 futures = { workspace = true }
 http = { workspace = true }
 insta = { workspace = true }
@@ -185,6 +181,9 @@ pretty_assertions = { workspace = true }
 rand = { workspace = true }
 serial_test = { workspace = true }
 tokio-tungstenite = { workspace = true }
-vt100 = { workspace = true }
 uuid = { workspace = true }
+vt100 = { workspace = true }
 wiremock = { workspace = true }
+
+[lints]
+workspace = true

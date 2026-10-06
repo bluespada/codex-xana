@@ -9,9 +9,6 @@ name = "codex_exec_server_protocol"
 path = "src/lib.rs"
 doctest = false
 
-[lints]
-workspace = true
-
 [dependencies]
 base64 = { workspace = true }
 codex-file-system = { workspace = true }
@@ -28,3 +25,6 @@ codex-mxc-sandbox = { workspace = true }
 
 [dev-dependencies]
 pretty_assertions = { workspace = true }
+
+[lints]
+workspace = true

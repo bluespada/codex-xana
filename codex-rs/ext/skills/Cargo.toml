@@ -9,9 +9,6 @@ name = "codex_skills_extension"
 path = "src/lib.rs"
 doctest = false
 
-[lints]
-workspace = true
-
 [dependencies]
 blake3 = { workspace = true }
 codex-analytics = { workspace = true }
@@ -48,3 +45,6 @@ pretty_assertions = { workspace = true }
 tempfile = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 tracing-subscriber = { workspace = true }
+
+[lints]
+workspace = true

@@ -9,9 +9,6 @@ doctest = false
 name = "codex_guardian_reviewer"
 path = "src/lib.rs"
 
-[lints]
-workspace = true
-
 [dependencies]
 anyhow = { workspace = true }
 codex-analytics = { workspace = true }
@@ -32,5 +29,8 @@ tracing = { workspace = true }
 [dev-dependencies]
 opentelemetry = { workspace = true }
 opentelemetry_sdk = { workspace = true, features = ["experimental_metrics_custom_reader", "metrics"] }
-test-case = "3.3.1"
 pretty_assertions = { workspace = true }
+test-case = "3.3.1"
+
+[lints]
+workspace = true

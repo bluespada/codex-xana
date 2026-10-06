@@ -4,20 +4,20 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 
-[lints]
-workspace = true
-
 [package.metadata.cargo-shear]
 # "image" does not forward png's zlib-rs feature. This direct dependency keeps
 # encoded PNG bytes stable when WebSocket dependencies are absent from a build.
 ignored = ["png"]
 
+[lib]
+doctest = false
+
 [dependencies]
 base64 = { workspace = true }
-image = { workspace = true, features = ["jpeg", "png", "gif", "webp"] }
-png = { version = "0.18.0", features = ["zlib-rs"] }
 codex-utils-cache = { workspace = true }
+image = { workspace = true, features = ["jpeg", "png", "gif", "webp"] }
 mime_guess = { workspace = true }
+png = { version = "0.18.0", features = ["zlib-rs"] }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["fs", "rt", "rt-multi-thread", "macros"] }
 
@@ -25,8 +25,8 @@ tokio = { workspace = true, features = ["fs", "rt", "rt-multi-thread", "macros"]
 divan = { workspace = true }
 image = { workspace = true, features = ["jpeg", "png", "gif", "webp"] }
 
-[lib]
-doctest = false
+[lints]
+workspace = true
 
 [[bench]]
 name = "prompt_images"

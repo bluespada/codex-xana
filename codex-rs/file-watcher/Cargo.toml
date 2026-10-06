@@ -9,9 +9,6 @@ name = "codex_file_watcher"
 path = "src/lib.rs"
 doctest = false
 
-[lints]
-workspace = true
-
 [dependencies]
 notify = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt", "sync", "time"] }
@@ -20,3 +17,6 @@ tracing = { workspace = true, features = ["log"] }
 [dev-dependencies]
 pretty_assertions = { workspace = true }
 tempfile = { workspace = true }
+
+[lints]
+workspace = true

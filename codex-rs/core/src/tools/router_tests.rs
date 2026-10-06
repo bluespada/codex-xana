@@ -27,8 +27,10 @@ use codex_protocol::dynamic_tools::DynamicToolSpec;
 use codex_protocol::models::ContentItem;
 use codex_protocol::models::FunctionCallOutputBody;
 use codex_protocol::models::ResponseItem;
+use codex_protocol::models::SearchToolCallParams;
 use codex_tools::ResponsesApiNamespace;
 use codex_tools::ResponsesApiNamespaceTool;
+use codex_tools::TOOL_SEARCH_TOOL_NAME;
 use codex_tools::ToolName;
 use codex_tools::ToolSpec;
 use codex_tools::default_namespace_description;
@@ -235,6 +237,65 @@ async fn build_tool_call_uses_namespace_for_registry_name() -> anyhow::Result<()
         }
         other => panic!("expected function payload, got {other:?}"),
     }
+
+    Ok(())
+}
+
+#[test]
+fn a_flat_tool_search_call_becomes_a_search_payload() -> anyhow::Result<()> {
+    let call = ToolRouter::build_tool_call(ResponseItem::FunctionCall {
+        id: None,
+        name: TOOL_SEARCH_TOOL_NAME.to_string(),
+        namespace: None,
+        arguments: json!({"query": "calendar", "limit": 3}).to_string(),
+        encrypted_function_args: None,
+        call_id: "call-search".to_string(),
+        internal_chat_message_metadata_passthrough: None,
+    })?
+    .expect("function_call should produce a tool call");
+
+    assert_eq!(call.tool_name, ToolName::plain(TOOL_SEARCH_TOOL_NAME));
+    assert_eq!(
+        call.payload,
+        ToolPayload::ToolSearch {
+            arguments: SearchToolCallParams {
+                query: "calendar".to_string(),
+                limit: Some(3),
+            },
+        }
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn a_flat_mcp_name_resolves_to_its_namespaced_tool() -> anyhow::Result<()> {
+    let (_, turn) = make_session_and_context().await;
+    let turn = Arc::new(turn);
+    let step_context = StepContext::for_test(Arc::clone(&turn));
+    let mcp_tool = mcp_runtime(mcp_tool_info("sample", false, "mcp__sample__", "search"));
+    let router = test_tool_router(step_context.as_ref(), vec![mcp_tool], Vec::new(), &[]);
+
+    // One flat name is all these protocols carry, so the namespace is recovered
+    // from the registry rather than read off the call.
+    assert_eq!(
+        router.resolve_tool_name(ToolName::plain("mcp__sample__search")),
+        ToolName::namespaced("mcp__sample__", "search")
+    );
+    // A plain name the registry answers to is left as it is, and an unknown name
+    // stays unknown rather than resolving to whichever tool looks closest.
+    assert_eq!(
+        router.resolve_tool_name(ToolName::plain("exec_command")),
+        ToolName::plain("exec_command")
+    );
+    assert_eq!(
+        router.resolve_tool_name(ToolName::plain("no_such_tool")),
+        ToolName::plain("no_such_tool")
+    );
+    assert_eq!(
+        router.resolve_tool_name(ToolName::namespaced("mcp__sample__", "search")),
+        ToolName::namespaced("mcp__sample__", "search")
+    );
 
     Ok(())
 }

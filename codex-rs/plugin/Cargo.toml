@@ -9,9 +9,6 @@ doctest = false
 name = "codex_plugin"
 path = "src/lib.rs"
 
-[lints]
-workspace = true
-
 [dependencies]
 codex-config = { workspace = true }
 codex-core-plugin-common = { workspace = true }
@@ -24,3 +21,6 @@ thiserror = { workspace = true }
 
 [dev-dependencies]
 pretty_assertions = { workspace = true }
+
+[lints]
+workspace = true

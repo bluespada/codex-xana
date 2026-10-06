@@ -9,13 +9,10 @@ name = "codex_app_server_protocol"
 path = "src/lib.rs"
 doctest = false
 
-[lints]
-workspace = true
-
 [dependencies]
 anyhow = { workspace = true }
-codex-experimental-api-macros = { workspace = true }
 codex-app-server-protocol-noop-macros = { workspace = true }
+codex-experimental-api-macros = { workspace = true }
 codex-extension-items = { workspace = true }
 codex-history = { workspace = true }
 codex-protocol = { workspace = true }
@@ -25,17 +22,17 @@ codex-shell-command = { workspace = true }
 codex-utils-absolute-path = { workspace = true }
 codex-utils-path-uri = { workspace = true }
 codex-utils-redacted-string = { workspace = true }
-serde = { workspace = true, features = ["derive"] }
-serde_json = { workspace = true }
-serde_with = { workspace = true }
-strum_macros = { workspace = true }
-thiserror = { workspace = true }
+inventory = { workspace = true }
 rmcp = { workspace = true, default-features = false, features = [
     "base64",
     "macros",
     "server",
 ] }
-inventory = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+serde_with = { workspace = true }
+strum_macros = { workspace = true }
+thiserror = { workspace = true }
 tracing = { workspace = true }
 uuid = { workspace = true, features = ["serde", "v7"] }
 zstd = { workspace = true }
@@ -54,3 +51,6 @@ schemars = { workspace = true }
 similar = { workspace = true }
 tempfile = { workspace = true }
 ts-rs = { workspace = true }
+
+[lints]
+workspace = true

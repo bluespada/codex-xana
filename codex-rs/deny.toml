@@ -225,6 +225,10 @@ deny = [
     # Removing async-trait materially improves debug build times:
     # https://github.com/openai/codex/pull/27304
     { crate = "async-trait", wrappers = [
+        # Fork divergence (xana): claudius supplies the Anthropic Messages protocol model
+        # (request params, typed stream events, thinking config). Its dependency on
+        # async-trait is unconditional, so the ban is waived for that wrapper only.
+        "claudius",
         "hickory-proto",
         "opentelemetry-http",
         "pagable",
@@ -233,27 +237,10 @@ deny = [
         "webrtc",
         "zbus",
     ], reason = "first-party traits must use native async trait methods with explicit Send bounds" },
-    # Migration ratchet: `codex-http-client` is the intended reqwest owner. Remove each temporary
-    # wrapper when that crate's direct reqwest dependency is migrated to the shared abstraction.
-    { crate = "reqwest", wrappers = [
-        # Intended owner.
-        "codex-http-client",
-        # Intentional exception: gRPC uses reqwest directly as tonic's HTTP/2 transport.
-        "codex-code-mode",
-        # Intentional exception: this standalone, privileged Responses API proxy owns its blocking
-        # upstream HTTP transport independently of Codex.
-        "codex-responses-api-proxy",
-        # Temporary migration exceptions.
-        "codex-otel",
-        # Third-party crates that own their reqwest integration. These are not part of the
-        # first-party migration count above.
-        "oauth2",
-        "opentelemetry-http",
-        "opentelemetry-otlp",
-        "rmcp",
-        "sentry",
-        "webrtc-sys-build",
-    ], reason = "new direct reqwest dependencies must use codex-http-client; temporary wrappers track migration debt" },
+    # Fork divergence (xana): upstream bans direct `reqwest` dependencies here to force new code
+    # through `codex-http-client`, listing the remaining exceptions as tracked migration debt.
+    # This fork drops that ratchet. reqwest is pinned once in `[workspace.dependencies]` and
+    # first-party crates may depend on it directly.
 ]
 
 # List of features to allow/deny

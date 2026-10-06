@@ -9,9 +9,6 @@ name = "codex_agent_message_board_extension"
 path = "src/lib.rs"
 doctest = false
 
-[lints]
-workspace = true
-
 [dependencies]
 base64 = { workspace = true }
 caseless = { workspace = true }
@@ -33,3 +30,6 @@ codex-utils-output-truncation = { workspace = true }
 pretty_assertions = { workspace = true }
 tempfile = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+
+[lints]
+workspace = true

@@ -4,8 +4,8 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 
-[lints]
-workspace = true
+[lib]
+doctest = false
 
 [dependencies]
 anyhow = { workspace = true }
@@ -33,5 +33,5 @@ pretty_assertions = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt"] }
 wiremock = { workspace = true }
 
-[lib]
-doctest = false
+[lints]
+workspace = true

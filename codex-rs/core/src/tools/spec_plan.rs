@@ -30,6 +30,7 @@ use crate::tools::handlers::TestSyncHandler;
 use crate::tools::handlers::ToolSearchHandlerCache;
 use crate::tools::handlers::ViewImageHandler;
 use crate::tools::handlers::WaitForEnvironmentHandler;
+use crate::tools::handlers::WebFetchHandler;
 use crate::tools::handlers::WriteStdinHandler;
 use crate::tools::handlers::extension_tools::ExtensionToolAdapter;
 use crate::tools::handlers::multi_agents::CloseAgentHandler;
@@ -66,6 +67,7 @@ use codex_features::Feature;
 use codex_features::SleepToolMode;
 use codex_login::AuthManager;
 use codex_mcp::CODEX_APPS_MCP_SERVER_NAME;
+use codex_model_provider_info::WireApi;
 use codex_prompts::ResolvedModelMessages;
 use codex_protocol::DEFAULT_FUNCTION_NAMESPACE;
 use codex_protocol::account::PlanType;
@@ -155,7 +157,7 @@ pub(crate) fn build_tool_router(
         &turn_context.config,
         apps_enabled,
         &mcp.config().mcp_server_catalog,
-        model_info.supports_search_tool,
+        deferred_tool_loading_available(turn_context, model_info),
         &mut registry,
     );
     apply_mcp_tool_exposure_policy(
@@ -185,6 +187,22 @@ pub(crate) fn build_tool_router(
         hosted_specs,
         &session.services.tool_search_handler_cache,
     )
+}
+
+/// Whether deferred tool loading is available for this turn.
+///
+/// Deferral is the Responses API's own arrangement: a tool is left out of the
+/// request and found through the search tool, whose schema the model can then
+/// call because the provider accepts a call to a tool it never carried. The
+/// other wire protocols carry a flat, complete tool list, where a tool that is
+/// left out is a tool the model has no way to call, so deferral is off there and
+/// every tool is declared up front.
+fn deferred_tool_loading_available(turn_context: &TurnContext, model_info: &ModelInfo) -> bool {
+    model_info.supports_search_tool
+        && matches!(
+            turn_context.config.model_provider.wire_api,
+            WireApi::OpenAiResponses
+        )
 }
 
 /// Use the effective mode because the model can override the thread's configured mode.
@@ -264,15 +282,21 @@ fn apply_mcp_tool_exposure_policy(
             exposures = exposures.difference(ToolExposures::DEFERRED | ToolExposures::CODE_MODE);
         }
 
-        exposures = if model_info.supports_search_tool
-            && exposures.contains(ToolExposures::DEFERRED)
-            && (effective_tool_mode(turn_context, model_info) != ToolMode::CodeModeOnly
-                || exposures.contains(ToolExposures::CODE_MODE))
+        // Direct and deferred exposure are mutually exclusive: the tool is
+        // either declared in the request or left to the search tool. Which one
+        // wins is a property of the wire protocol, and a tool a policy has left
+        // with only one of the two keeps it.
+        if exposures.contains(ToolExposures::DIRECT) && exposures.contains(ToolExposures::DEFERRED)
         {
-            exposures.difference(ToolExposures::DIRECT)
-        } else {
-            exposures.difference(ToolExposures::DEFERRED)
-        };
+            exposures = if deferred_tool_loading_available(turn_context, model_info)
+                && (effective_tool_mode(turn_context, model_info) != ToolMode::CodeModeOnly
+                    || exposures.contains(ToolExposures::CODE_MODE))
+            {
+                exposures.difference(ToolExposures::DIRECT)
+            } else {
+                exposures.difference(ToolExposures::DEFERRED)
+            };
+        }
 
         tool.exposure = match (
             exposures.contains(ToolExposures::DIRECT),
@@ -1337,6 +1361,10 @@ fn add_core_utility_tools(context: &CoreToolPlanContext<'_>, registry: &mut Tool
             include_environment_id,
         }));
     }
+
+    // Reading a page must not depend on web search being enabled or on the provider
+    // exposing a hosted search tool, so this tool is never gated on either.
+    registry.add(WebFetchHandler);
 }
 
 #[instrument(level = "trace", skip_all)]
@@ -1442,11 +1470,12 @@ fn add_collaboration_tools(context: &CoreToolPlanContext<'_>, registry: &mut Too
         } else {
             let agent_type_description =
                 agent_type_description(turn_context, context.default_agent_type_description);
-            let exposure = if context.model_info.supports_search_tool {
-                ToolExposure::Deferred
-            } else {
-                ToolExposure::Direct
-            };
+            let exposure =
+                if deferred_tool_loading_available(context.turn_context, context.model_info) {
+                    ToolExposure::Deferred
+                } else {
+                    ToolExposure::Direct
+                };
             registry.add_with_exposure(
                 SpawnAgentHandler::new(SpawnAgentToolOptions {
                     available_models: turn_context.available_models.clone(),

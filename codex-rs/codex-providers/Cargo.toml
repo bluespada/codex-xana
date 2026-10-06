@@ -1,0 +1,34 @@
+[package]
+edition.workspace = true
+license.workspace = true
+name = "codex-providers"
+version.workspace = true
+
+[lib]
+doctest = false
+
+[dependencies]
+async-openai = { workspace = true }
+claudius = { workspace = true }
+codex-api = { workspace = true }
+codex-model-provider-info = { workspace = true }
+codex-protocol = { workspace = true }
+codex-tools = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+bytes = { workspace = true }
+codex-client = { workspace = true }
+futures = { workspace = true }
+http = { workspace = true }
+tokio = { workspace = true, features = [
+    "macros",
+    "rt-multi-thread",
+    "time",
+] }
+
+[lints]
+workspace = true

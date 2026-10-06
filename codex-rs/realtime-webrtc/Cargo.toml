@@ -7,12 +7,9 @@ license.workspace = true
 [lib]
 doctest = false
 
-[lints]
-workspace = true
-
 [dependencies]
-codex-build-info = { workspace = true }
 anyhow = { workspace = true }
+codex-build-info = { workspace = true }
 codex-install-context = { workspace = true }
 codex-utils-pty = { workspace = true }
 futures = { workspace = true, features = ["std"] }
@@ -28,3 +25,6 @@ pretty_assertions = { workspace = true }
 
 [target.'cfg(unix)'.dev-dependencies]
 libc = { workspace = true }
+
+[lints]
+workspace = true

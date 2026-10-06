@@ -9,9 +9,6 @@ doctest = false
 name = "codex_model_provider_info"
 path = "src/lib.rs"
 
-[lints]
-workspace = true
-
 [dependencies]
 codex-client = { workspace = true }
 codex-protocol = { workspace = true }
@@ -27,3 +24,6 @@ maplit = { workspace = true }
 pretty_assertions = { workspace = true }
 tempfile = { workspace = true }
 toml = { workspace = true }
+
+[lints]
+workspace = true

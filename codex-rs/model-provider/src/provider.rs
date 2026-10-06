@@ -643,7 +643,7 @@ mod tests {
             auth: None,
             gateway_oauth: None,
             aws: None,
-            wire_api: WireApi::Responses,
+            wire_api: WireApi::OpenAiResponses,
             query_params: None,
             http_headers: None,
             env_http_headers: None,
@@ -693,7 +693,7 @@ mod tests {
     #[tokio::test]
     async fn scoped_auth_ignores_scope_for_non_openai_provider() {
         let provider = create_model_provider(
-            create_oss_provider_with_base_url("http://localhost:11434/v1", WireApi::Responses),
+            create_oss_provider_with_base_url("http://localhost:11434/v1", WireApi::OpenAiResponses),
             /*auth_manager*/ None,
         );
 
@@ -1165,7 +1165,7 @@ printf '%s\n' '{"AccessKeyId":"exported","SecretAccessKey":"secret"}'
             ModelProviderInfo {
                 name: "Custom".to_string(),
                 base_url: Some("http://localhost:1234/v1".to_string()),
-                wire_api: WireApi::Responses,
+                wire_api: WireApi::OpenAiResponses,
                 requires_openai_auth: false,
                 ..Default::default()
             },

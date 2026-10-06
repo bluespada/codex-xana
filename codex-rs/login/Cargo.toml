@@ -4,23 +4,23 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 
-[lints]
-workspace = true
+[lib]
+doctest = false
 
 [dependencies]
-codex-utils-process = { workspace = true }
 anyhow = { workspace = true }
 base64 = { workspace = true }
 chrono = { workspace = true, features = ["serde"] }
 codex-agent-identity = { workspace = true }
-codex-http-client = { workspace = true }
 codex-config = { workspace = true }
+codex-http-client = { workspace = true }
 codex-keyring-store = { workspace = true }
 codex-model-provider-info = { workspace = true }
 codex-otel = { workspace = true }
 codex-protocol = { workspace = true }
 codex-secrets = { workspace = true }
 codex-terminal-detection = { workspace = true }
+codex-utils-process = { workspace = true }
 codex-utils-template = { workspace = true }
 codex-workload-identity = { workspace = true }
 http = { workspace = true }
@@ -46,10 +46,10 @@ webbrowser = { workspace = true }
 
 [dev-dependencies]
 codex-utils-cargo-bin = { workspace = true }
-opentelemetry_sdk = { workspace = true, features = ["testing"] }
 core_test_support = { workspace = true }
 jsonwebtoken = { workspace = true }
 keyring = { workspace = true }
+opentelemetry_sdk = { workspace = true, features = ["testing"] }
 pretty_assertions = { workspace = true }
 regex-lite = { workspace = true }
 serial_test = { workspace = true }
@@ -57,5 +57,5 @@ tempfile = { workspace = true }
 tracing-subscriber = { workspace = true }
 wiremock = { workspace = true }
 
-[lib]
-doctest = false
+[lints]
+workspace = true

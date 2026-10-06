@@ -2857,7 +2857,7 @@
               "$ref": "#/definitions/WireApi"
             }
           ],
-          "default": "responses",
+          "default": "openai-responses",
           "description": "Which wire protocol this provider expects."
         }
       },
@@ -6699,12 +6699,26 @@
       "type": "object"
     },
     "WireApi": {
-      "description": "Wire protocol that the provider speaks.",
+      "description": "Wire protocol that the provider speaks.\n\nThe serialized form is the accepted TOML value for `wire_api` in `config.toml`. The legacy spelling `responses` is still accepted as an alias for [`WireApi::OpenAiResponses`].",
       "oneOf": [
         {
           "description": "The Responses API exposed by OpenAI at `/v1/responses`.",
           "enum": [
-            "responses"
+            "openai-responses"
+          ],
+          "type": "string"
+        },
+        {
+          "description": "The Chat Completions API exposed by OpenAI at `/v1/chat/completions`.",
+          "enum": [
+            "openai-completions"
+          ],
+          "type": "string"
+        },
+        {
+          "description": "The Messages API exposed by Anthropic at `/v1/messages`.",
+          "enum": [
+            "anthropic-messages"
           ],
           "type": "string"
         }

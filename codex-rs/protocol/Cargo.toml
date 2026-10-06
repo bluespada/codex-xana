@@ -4,13 +4,16 @@ license.workspace = true
 name = "codex-protocol"
 version.workspace = true
 
+[package.metadata.cargo-shear]
+# Required because:
+# `icu_provider`: contains a required `sync` feature for `icu_decimal`
+# `strum`: is referenced by generated `EnumIter` derive implementations
+ignored = ["icu_provider", "strum"]
+
 [lib]
 name = "codex_protocol"
 path = "src/lib.rs"
 doctest = false
-
-[lints]
-workspace = true
 
 [dependencies]
 chardetng = { workspace = true }
@@ -62,8 +65,5 @@ pretty_assertions = { workspace = true }
 tempfile = { workspace = true }
 tokio = { workspace = true, features = ["test-util"] }
 
-[package.metadata.cargo-shear]
-# Required because:
-# `icu_provider`: contains a required `sync` feature for `icu_decimal`
-# `strum`: is referenced by generated `EnumIter` derive implementations
-ignored = ["icu_provider", "strum"]
+[lints]
+workspace = true

@@ -9,12 +9,9 @@ doctest = false
 name = "codex_core_plugins"
 path = "src/lib.rs"
 
-[lints]
-workspace = true
-
 [dependencies]
-codex-utils-process = { workspace = true }
 anyhow = { workspace = true }
+chrono = { workspace = true }
 codex-analytics = { workspace = true }
 codex-app-server-protocol = { workspace = true }
 codex-config = { workspace = true }
@@ -30,14 +27,14 @@ codex-model-provider = { workspace = true }
 codex-otel = { workspace = true }
 codex-plugin = { workspace = true }
 codex-protocol = { workspace = true }
-codex-skills = { workspace = true }
 codex-shell-command = { workspace = true }
+codex-skills = { workspace = true }
 codex-tools = { workspace = true }
 codex-utils-absolute-path = { workspace = true }
 codex-utils-path = { workspace = true }
 codex-utils-path-uri = { workspace = true }
 codex-utils-plugins = { workspace = true }
-chrono = { workspace = true }
+codex-utils-process = { workspace = true }
 dirs = { workspace = true }
 flate2 = { workspace = true }
 futures = { workspace = true }
@@ -67,3 +64,6 @@ tempfile = { workspace = true }
 tracing-subscriber = { workspace = true }
 tracing-test = { workspace = true, features = ["no-env-filter"] }
 wiremock = { workspace = true }
+
+[lints]
+workspace = true

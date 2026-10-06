@@ -4,17 +4,14 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 
-[[bin]]
-name = "codex-linux-sandbox"
-path = "src/main.rs"
-
 [lib]
 name = "codex_linux_sandbox"
 path = "src/lib.rs"
 doctest = false
 
-[lints]
-workspace = true
+[[bin]]
+name = "codex-linux-sandbox"
+path = "src/main.rs"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 clap = { workspace = true, features = ["derive"] }
@@ -48,3 +45,6 @@ tokio = { workspace = true, features = [
     "rt-multi-thread",
     "signal",
 ] }
+
+[lints]
+workspace = true

@@ -9,9 +9,6 @@ name = "codex_web_search_extension"
 path = "src/lib.rs"
 doctest = false
 
-[lints]
-workspace = true
-
 [dependencies]
 codex-api = { workspace = true }
 codex-core = { workspace = true }
@@ -31,3 +28,6 @@ url = { workspace = true }
 
 [dev-dependencies]
 pretty_assertions = { workspace = true }
+
+[lints]
+workspace = true

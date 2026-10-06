@@ -13,35 +13,17 @@ doctest = false
 name = "codex-network-proxy"
 path = "src/main.rs"
 
-[lints]
-workspace = true
-
 [dependencies]
 anyhow = { workspace = true }
 base64 = { workspace = true }
-clap = { workspace = true, features = ["derive"] }
 chrono = { workspace = true }
+clap = { workspace = true, features = ["derive"] }
 codex-utils-absolute-path = { workspace = true }
 codex-utils-home-dir = { workspace = true }
 codex-utils-path-uri = { workspace = true }
 codex-utils-rustls-provider = { workspace = true }
 globset = { workspace = true }
 opentelemetry = { workspace = true }
-rand = { workspace = true }
-rand_regex = { workspace = true }
-regex = { workspace = true }
-regex-automata = { workspace = true }
-regex-syntax = { workspace = true }
-schemars = { workspace = true }
-serde = { workspace = true, features = ["derive"] }
-serde_ignored = { workspace = true }
-serde_json = { workspace = true }
-thiserror = { workspace = true }
-time = { workspace = true }
-tokio = { workspace = true, features = ["full"] }
-tracing = { workspace = true }
-tracing-subscriber = { workspace = true, features = ["env-filter"] }
-url = { workspace = true }
 rama-core = { version = "=0.3.0-alpha.4" }
 rama-http = { version = "=0.3.0-alpha.4" }
 rama-http-backend = { version = "=0.3.0-alpha.4", features = ["tls"] }
@@ -49,12 +31,23 @@ rama-net = { version = "=0.3.0-alpha.4", features = ["http", "tls"] }
 rama-socks5 = { version = "=0.3.0-alpha.4" }
 rama-tcp = { version = "=0.3.0-alpha.4", features = ["http"] }
 rama-tls-rustls = { version = "=0.3.0-alpha.4", features = ["http"] }
+rand = { workspace = true }
+rand_regex = { workspace = true }
+regex = { workspace = true }
+regex-automata = { workspace = true }
+regex-syntax = { workspace = true }
 rustls-native-certs = { workspace = true }
+schemars = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_ignored = { workspace = true }
+serde_json = { workspace = true }
 sha2 = { workspace = true }
-
-[dev-dependencies]
-pretty_assertions = { workspace = true }
-tempfile = { workspace = true }
+thiserror = { workspace = true }
+time = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
+url = { workspace = true }
 
 [target.'cfg(target_family = "unix")'.dependencies]
 libc = { workspace = true }
@@ -75,5 +68,12 @@ windows-sys = { workspace = true, features = [
     "Win32_System_Threading",
 ] }
 
+[dev-dependencies]
+pretty_assertions = { workspace = true }
+tempfile = { workspace = true }
+
 [target.'cfg(windows)'.dev-dependencies]
 codex-windows-sandbox = { path = "../windows-sandbox-rs" }
+
+[lints]
+workspace = true

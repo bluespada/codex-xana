@@ -10,9 +10,6 @@ path = "src/lib.rs"
 doctest = false
 test = false
 
-[lints]
-workspace = true
-
 [dependencies]
 codex-core = { workspace = true }
 codex-protocol = { workspace = true }
@@ -22,3 +19,6 @@ anyhow = { workspace = true }
 core_test_support = { workspace = true }
 pretty_assertions = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+
+[lints]
+workspace = true

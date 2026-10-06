@@ -159,7 +159,9 @@ fn model_provider_from_proto(
     }
     let id = provider.id;
     let wire_api = match proto::WireApi::try_from(provider.wire_api) {
-        Ok(proto::WireApi::Responses) => WireApi::Responses,
+        Ok(proto::WireApi::OpenaiResponses) => WireApi::OpenAiResponses,
+        Ok(proto::WireApi::OpenaiCompletions) => WireApi::OpenAiCompletions,
+        Ok(proto::WireApi::AnthropicMessages) => WireApi::AnthropicMessages,
         Ok(proto::WireApi::Unspecified) => {
             return Err(parse_error("remote thread config omitted wire_api"));
         }
@@ -313,7 +315,9 @@ fn proto_string_map(values: HashMap<String, RedactedString>) -> proto::StringMap
 #[cfg(test)]
 fn proto_wire_api(wire_api: WireApi) -> proto::WireApi {
     match wire_api {
-        WireApi::Responses => proto::WireApi::Responses,
+        WireApi::OpenAiResponses => proto::WireApi::OpenaiResponses,
+        WireApi::OpenAiCompletions => proto::WireApi::OpenaiCompletions,
+        WireApi::AnthropicMessages => proto::WireApi::AnthropicMessages,
     }
 }
 
@@ -493,7 +497,7 @@ mod tests {
                                 refresh_interval_ms: 300_000,
                                 cwd: workspace_cwd,
                             }),
-                            wire_api: proto::WireApi::Responses.into(),
+                            wire_api: proto::WireApi::OpenaiResponses.into(),
                             query_params: Some(proto::StringMap {
                                 values: HashMap::from([(
                                     "api-version".to_string(),
@@ -564,7 +568,7 @@ mod tests {
                 refresh_interval_ms: 300_000,
                 cwd: workspace_dir(),
             }),
-            wire_api: WireApi::Responses,
+            wire_api: WireApi::OpenAiResponses,
             query_params: Some(HashMap::from([(
                 "api-version".to_string(),
                 "2026-04-16".into(),

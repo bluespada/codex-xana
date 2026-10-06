@@ -4,6 +4,9 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 
+[lib]
+doctest = false
+
 [dependencies]
 async-channel = { workspace = true }
 base64 = { workspace = true }
@@ -14,19 +17,19 @@ codex-http-client = { workspace = true }
 codex-protocol = { workspace = true }
 codex-utils-rustls-provider = { workspace = true }
 codex-websocket-client = { workspace = true }
+eventsource-stream = { workspace = true }
 futures = { workspace = true }
 http = { workspace = true }
+regex-lite = { workspace = true }
 schemars = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true, features = ["raw_value"] }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["fs", "macros", "net", "rt", "sync", "time"] }
 tokio-tungstenite = { workspace = true }
-tungstenite = { workspace = true }
-tracing = { workspace = true }
-eventsource-stream = { workspace = true }
-regex-lite = { workspace = true }
 tokio-util = { workspace = true, features = ["codec", "io"] }
+tracing = { workspace = true }
+tungstenite = { workspace = true }
 url = { workspace = true }
 uuid = { workspace = true }
 
@@ -43,6 +46,3 @@ wiremock = { workspace = true }
 
 [lints]
 workspace = true
-
-[lib]
-doctest = false

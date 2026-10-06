@@ -7,9 +7,6 @@ license.workspace = true
 [lib]
 doctest = false
 
-[lints]
-workspace = true
-
 [dependencies]
 anyhow = { workspace = true }
 clap = { workspace = true, features = ["derive"] }
@@ -26,3 +23,6 @@ base64 = { workspace = true }
 hmac = { workspace = true }
 pretty_assertions = { workspace = true }
 serde_json = { workspace = true }
+
+[lints]
+workspace = true

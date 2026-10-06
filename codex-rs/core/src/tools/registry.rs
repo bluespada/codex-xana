@@ -499,6 +499,27 @@ impl ToolRegistry {
             .map(|tool| Arc::clone(&tool.runtime))
     }
 
+    /// The registered tool a flat wire name stands for.
+    ///
+    /// A protocol that carries one flat name per tool cannot say which
+    /// namespace a call belongs to, so a name that no registration answers to is
+    /// matched against the flat spelling of every registered tool. Two tools
+    /// that flatten to the same name leave the wire name ambiguous, and then
+    /// nothing is resolved. The scan runs only after a normal lookup misses.
+    pub(crate) fn resolve_flat_name(&self, flat_name: &str) -> Option<ToolName> {
+        let mut resolved: Option<ToolName> = None;
+        for name in self.tools.keys() {
+            if codex_providers::wire_tool_name(name.namespace.as_deref(), &name.name) != flat_name {
+                continue;
+            }
+            if resolved.is_some() {
+                return None;
+            }
+            resolved = Some(name.clone());
+        }
+        resolved
+    }
+
     #[cfg(test)]
     pub(crate) fn tool_names_for_test(&self) -> Vec<ToolName> {
         let mut names = self.tools.keys().cloned().collect::<Vec<_>>();

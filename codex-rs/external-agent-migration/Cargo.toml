@@ -9,9 +9,6 @@ doctest = false
 name = "codex_external_agent_migration"
 path = "src/lib.rs"
 
-[lints]
-workspace = true
-
 [dependencies]
 chrono = { workspace = true }
 codex-analytics = { workspace = true }
@@ -31,8 +28,8 @@ serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 serde_yaml = { workspace = true }
 sha2 = { workspace = true }
-toml = { workspace = true }
 tokio = { workspace = true, features = ["rt", "sync"] }
+toml = { workspace = true }
 tracing = { workspace = true }
 
 [dev-dependencies]
@@ -40,3 +37,6 @@ codex-app-server-protocol = { workspace = true }
 pretty_assertions = { workspace = true }
 tempfile = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+
+[lints]
+workspace = true

@@ -59,7 +59,7 @@ impl OllamaClient {
 
     #[cfg(test)]
     async fn try_from_provider_with_base_url(base_url: &str) -> io::Result<Self> {
-        let provider = create_oss_provider_with_base_url(base_url, WireApi::Responses);
+        let provider = create_oss_provider_with_base_url(base_url, WireApi::OpenAiResponses);
         Self::try_from_provider(
             &provider,
             HttpClientFactory::new(OutboundProxyPolicy::ReqwestDefault),
@@ -489,7 +489,7 @@ mod tests {
             .mount(&proxy)
             .await;
 
-        let provider = create_oss_provider_with_base_url(base_url, WireApi::Responses);
+        let provider = create_oss_provider_with_base_url(base_url, WireApi::OpenAiResponses);
         let client = OllamaClient::try_from_provider(
             &provider,
             HttpClientFactory::new(OutboundProxyPolicy::RespectSystemProxy),
@@ -563,7 +563,7 @@ mod tests {
             .mount(&server)
             .await;
 
-        let provider = create_oss_provider_with_base_url(&server.uri(), WireApi::Responses);
+        let provider = create_oss_provider_with_base_url(&server.uri(), WireApi::OpenAiResponses);
         let result = OllamaClient::try_from_provider(
             &provider,
             HttpClientFactory::new(outbound_proxy_policy),

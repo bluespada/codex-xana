@@ -4,12 +4,8 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 
-[[example]]
-name = "generate-proto"
-path = "examples/generate-proto.rs"
-
-[lints]
-workspace = true
+[lib]
+doctest = false
 
 [dependencies]
 anyhow = { workspace = true }
@@ -47,10 +43,6 @@ tonic-prost = { workspace = true }
 tracing = { workspace = true }
 wildmatch = { workspace = true }
 
-[target.'cfg(unix)'.dependencies]
-dns-lookup = { workspace = true }
-libc = { workspace = true }
-
 [target.'cfg(target_os = "macos")'.dependencies]
 core-foundation = "0.9"
 
@@ -63,6 +55,10 @@ windows-sys = { workspace = true, features = [
     "Win32_UI_Shell",
 ] }
 
+[target.'cfg(unix)'.dependencies]
+dns-lookup = { workspace = true }
+libc = { workspace = true }
+
 [dev-dependencies]
 pretty_assertions = { workspace = true }
 tempfile = { workspace = true }
@@ -71,5 +67,9 @@ tokio-stream = { workspace = true, features = ["net"] }
 tonic = { workspace = true, features = ["router", "transport"] }
 tonic-prost-build = { version = "=0.14.3", default-features = false, features = ["transport"] }
 
-[lib]
-doctest = false
+[[example]]
+name = "generate-proto"
+path = "examples/generate-proto.rs"
+
+[lints]
+workspace = true

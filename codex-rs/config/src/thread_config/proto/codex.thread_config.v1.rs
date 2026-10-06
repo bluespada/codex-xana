@@ -103,7 +103,9 @@ pub struct ModelProviderAuthInfo {
 #[repr(i32)]
 pub enum WireApi {
     Unspecified = 0,
-    Responses = 1,
+    OpenaiResponses = 1,
+    OpenaiCompletions = 2,
+    AnthropicMessages = 3,
 }
 impl WireApi {
     /// String value of the enum field names used in the ProtoBuf definition.
@@ -113,14 +115,18 @@ impl WireApi {
     pub fn as_str_name(&self) -> &'static str {
         match self {
             Self::Unspecified => "WIRE_API_UNSPECIFIED",
-            Self::Responses => "WIRE_API_RESPONSES",
+            Self::OpenaiResponses => "WIRE_API_OPENAI_RESPONSES",
+            Self::OpenaiCompletions => "WIRE_API_OPENAI_COMPLETIONS",
+            Self::AnthropicMessages => "WIRE_API_ANTHROPIC_MESSAGES",
         }
     }
     /// Creates an enum from field names used in the ProtoBuf definition.
     pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
         match value {
             "WIRE_API_UNSPECIFIED" => Some(Self::Unspecified),
-            "WIRE_API_RESPONSES" => Some(Self::Responses),
+            "WIRE_API_OPENAI_RESPONSES" => Some(Self::OpenaiResponses),
+            "WIRE_API_OPENAI_COMPLETIONS" => Some(Self::OpenaiCompletions),
+            "WIRE_API_ANTHROPIC_MESSAGES" => Some(Self::AnthropicMessages),
             _ => None,
         }
     }

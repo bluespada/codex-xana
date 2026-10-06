@@ -11,10 +11,10 @@ path = "src/lib.rs"
 test = false
 doctest = false
 
-[lints]
-workspace = true
-
 [dependencies]
 chrono = { workspace = true }
 codex-cloud-tasks-client = { workspace = true }
 diffy = { workspace = true }
+
+[lints]
+workspace = true

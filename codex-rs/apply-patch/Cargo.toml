@@ -13,9 +13,6 @@ doctest = false
 name = "apply_patch"
 path = "src/main.rs"
 
-[lints]
-workspace = true
-
 [dependencies]
 anyhow = { workspace = true }
 codex-exec-server = { workspace = true }
@@ -33,3 +30,6 @@ assert_matches = { workspace = true }
 codex-utils-cargo-bin = { workspace = true }
 pretty_assertions = { workspace = true }
 tempfile = { workspace = true }
+
+[lints]
+workspace = true

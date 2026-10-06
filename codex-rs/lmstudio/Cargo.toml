@@ -9,7 +9,6 @@ name = "codex_lmstudio"
 path = "src/lib.rs"
 doctest = false
 
-
 [dependencies]
 codex-core = { path = "../core" }
 codex-http-client = { workspace = true }
@@ -20,8 +19,8 @@ tracing = { version = "0.1.44", features = ["log"] }
 which = "8.0"
 
 [dev-dependencies]
-wiremock = "0.6"
 tokio = { version = "1", features = ["full"] }
+wiremock = "0.6"
 
 [lints]
 workspace = true

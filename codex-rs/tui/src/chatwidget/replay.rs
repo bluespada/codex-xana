@@ -447,6 +447,14 @@ impl ChatWidget {
                         "• ".dim(),
                         "  ",
                     ));
+                } else if let Some(text) = output.to_text() {
+                    self.flush_answer_stream_with_separator();
+                    self.add_to_history(history_cell::new_function_call_output(
+                        &name,
+                        namespace.as_deref(),
+                        &text,
+                    ));
+                    self.request_redraw();
                 }
             }
             ThreadItem::HookPrompt { .. } => {}

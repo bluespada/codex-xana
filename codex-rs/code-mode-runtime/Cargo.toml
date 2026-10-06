@@ -9,9 +9,6 @@ doctest = false
 name = "codex_code_mode_runtime"
 path = "src/lib.rs"
 
-[lints]
-workspace = true
-
 [dependencies]
 base64 = { workspace = true }
 codex-code-mode-protocol = { workspace = true }
@@ -28,3 +25,6 @@ v8 = { workspace = true, features = ["v8_enable_sandbox"] }
 [dev-dependencies]
 pretty_assertions = { workspace = true }
 tokio = { workspace = true, features = ["test-util"] }
+
+[lints]
+workspace = true

@@ -9,9 +9,6 @@ name = "codex_git_attribution"
 path = "src/lib.rs"
 doctest = false
 
-[lints]
-workspace = true
-
 [dependencies]
 codex-backend-client = { workspace = true }
 codex-extension-api = { workspace = true }
@@ -23,3 +20,6 @@ tokio = { workspace = true, features = ["time"] }
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt"] }
 wiremock = { workspace = true }
+
+[lints]
+workspace = true

@@ -4,6 +4,9 @@ license.workspace = true
 name = "codex-http-client"
 version.workspace = true
 
+[lib]
+doctest = false
+
 [dependencies]
 bytes = { workspace = true }
 codex-utils-rustls-provider = { workspace = true }
@@ -37,9 +40,6 @@ windows-sys = { workspace = true, features = [
     "Win32_Networking_WinHttp",
 ] }
 
-[lints]
-workspace = true
-
 [dev-dependencies]
 codex-utils-cargo-bin = { workspace = true }
 opentelemetry_sdk = { workspace = true }
@@ -49,5 +49,5 @@ tempfile = { workspace = true }
 tokio = { workspace = true, features = ["test-util"] }
 tracing-subscriber = { workspace = true }
 
-[lib]
-doctest = false
+[lints]
+workspace = true

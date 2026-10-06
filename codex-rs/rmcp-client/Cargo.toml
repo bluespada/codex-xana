@@ -4,8 +4,17 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 
-[lints]
-workspace = true
+# These tests are compiled through `#[path]` inside the inline `oauth::tests` module. Cargo-shear
+# cannot resolve those nested module paths and otherwise reports the linked files as unlinked.
+[package.metadata.cargo-shear]
+ignored-paths = [
+    "src/oauth/tests/persistor_tests.rs",
+    "src/oauth/tests/credential_store_tests.rs",
+    "src/oauth/tests/telemetry_tests.rs",
+]
+
+[lib]
+doctest = false
 
 [dependencies]
 anyhow = "1"
@@ -15,6 +24,7 @@ axum = { workspace = true, default-features = false, features = [
     "tokio",
 ] }
 base64 = { workspace = true }
+bytes = { workspace = true }
 codex-api = { workspace = true }
 codex-config = { workspace = true }
 codex-exec-server = { workspace = true }
@@ -24,10 +34,9 @@ codex-network-proxy = { workspace = true }
 codex-otel = { workspace = true }
 codex-protocol = { workspace = true }
 codex-secrets = { workspace = true }
+codex-utils-home-dir = { workspace = true }
 codex-utils-path-uri = { workspace = true }
 codex-utils-pty = { workspace = true }
-codex-utils-home-dir = { workspace = true }
-bytes = { workspace = true }
 futures = { workspace = true, default-features = false, features = ["std"] }
 http = { workspace = true }
 keyring = { workspace = true, features = ["crypto-rust"] }
@@ -69,18 +78,8 @@ urlencoding = { workspace = true }
 webbrowser = { workspace = true }
 which = { workspace = true }
 
-[dev-dependencies]
-opentelemetry_sdk = { workspace = true, features = ["testing"] }
-codex-http-client = { workspace = true }
-codex-utils-cargo-bin = { workspace = true }
-pretty_assertions = { workspace = true }
-serial_test = { workspace = true }
-tracing-subscriber = { workspace = true }
-tracing-test = { workspace = true, features = ["no-env-filter"] }
-wiremock = { workspace = true }
-
-[target.'cfg(unix)'.dependencies]
-libc = { workspace = true }
+[target.'cfg(any(target_os = "freebsd", target_os = "openbsd"))'.dependencies]
+keyring = { workspace = true, features = ["sync-secret-service"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 keyring = { workspace = true, features = ["linux-native-async-persistent"] }
@@ -92,17 +91,18 @@ keyring = { workspace = true, features = ["apple-native"] }
 keyring = { workspace = true, features = ["windows-native"] }
 windows-sys = { workspace = true, features = ["Win32_Storage_FileSystem"] }
 
-[target.'cfg(any(target_os = "freebsd", target_os = "openbsd"))'.dependencies]
-keyring = { workspace = true, features = ["sync-secret-service"] }
+[target.'cfg(unix)'.dependencies]
+libc = { workspace = true }
 
-# These tests are compiled through `#[path]` inside the inline `oauth::tests` module. Cargo-shear
-# cannot resolve those nested module paths and otherwise reports the linked files as unlinked.
-[package.metadata.cargo-shear]
-ignored-paths = [
-    "src/oauth/tests/persistor_tests.rs",
-    "src/oauth/tests/credential_store_tests.rs",
-    "src/oauth/tests/telemetry_tests.rs",
-]
+[dev-dependencies]
+codex-http-client = { workspace = true }
+codex-utils-cargo-bin = { workspace = true }
+opentelemetry_sdk = { workspace = true, features = ["testing"] }
+pretty_assertions = { workspace = true }
+serial_test = { workspace = true }
+tracing-subscriber = { workspace = true }
+tracing-test = { workspace = true, features = ["no-env-filter"] }
+wiremock = { workspace = true }
 
-[lib]
-doctest = false
+[lints]
+workspace = true

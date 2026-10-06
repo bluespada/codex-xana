@@ -42,6 +42,7 @@ use codex_api::AgentIdentityTelemetry;
 use codex_api::ApiError;
 use codex_api::AuthProvider;
 use codex_api::Compression;
+use codex_api::EventStreamClient as ApiEventStreamClient;
 use codex_api::MemoriesClient as ApiMemoriesClient;
 use codex_api::MemorySummarizeInput as ApiMemorySummarizeInput;
 use codex_api::MemorySummarizeOutput as ApiMemorySummarizeOutput;
@@ -150,6 +151,11 @@ use codex_model_provider::create_model_provider;
 use codex_model_provider_info::DEFAULT_WEBSOCKET_CONNECT_TIMEOUT_MS;
 use codex_model_provider_info::ModelProviderInfo;
 use codex_model_provider_info::WireApi;
+use codex_providers::BuiltRequest;
+use codex_providers::ChatRequest;
+use codex_providers::ProviderError;
+use codex_providers::WireProtocol;
+
 use codex_protocol::error::CodexErr;
 use codex_protocol::error::Result;
 use codex_response_debug_context::extract_response_debug_context;
@@ -2254,7 +2260,7 @@ impl ModelClientSession {
     ) -> Result<ResponseStream> {
         let wire_api = self.client.state.provider.info().wire_api;
         match wire_api {
-            WireApi::Responses => {
+            WireApi::OpenAiResponses => {
                 if self.client.responses_websocket_enabled() {
                     let request_trace = current_span_w3c_trace_context();
                     match self
@@ -2291,7 +2297,131 @@ impl ModelClientSession {
                 )
                 .await
             }
+            WireApi::OpenAiCompletions | WireApi::AnthropicMessages => {
+                self.stream_protocol_api(wire_api, prompt, model_info, session_telemetry, effort)
+                    .await
+            }
         }
+    }
+
+    /// Streams a turn for a protocol that posts a JSON body and reads a decoded
+    /// event stream back.
+    ///
+    /// The Responses API has its own method because it can also run over a
+    /// WebSocket. Here the body comes from [`WireProtocol`] and the events from
+    /// that protocol's decoder, so a new wire protocol needs no change to the
+    /// agent loop. The reasoning effort is resolved against the model the same
+    /// way the Responses path resolves it, and each protocol then writes the
+    /// value to its own field as it stands.
+    async fn stream_protocol_api(
+        &self,
+        wire_api: WireApi,
+        prompt: &Prompt,
+        model_info: &ModelInfo,
+        session_telemetry: &SessionTelemetry,
+        effort: Option<ReasoningEffortConfig>,
+    ) -> Result<ResponseStream> {
+        let protocol = WireProtocol::for_api(wire_api);
+        let without_decoder = || {
+            CodexErr::UnsupportedOperation(format!(
+                "provider `{}` is configured with wire_api = \"{wire_api}\", whose transport is the \
+                 Responses client; this build has no event decoder for it.",
+                self.client.state.provider.info().name,
+            ))
+        };
+
+        let client_setup = self
+            .client
+            .current_client_setup(ClientRouting::Workspace)
+            .await?;
+        tracing::Span::current().record("api.path", protocol.path);
+        let transport = self.client.build_api_transport(
+            &client_setup.api_provider,
+            protocol.path,
+            client_setup.redirect_policy,
+        )?;
+        let request_auth_context = AuthRequestTelemetryContext::new(
+            client_setup.auth.as_ref().map(CodexAuth::auth_mode),
+            client_setup.api_auth.as_ref(),
+            client_setup.agent_identity_telemetry.clone(),
+            PendingUnauthorizedRetry::default(),
+        );
+        let (request_telemetry, sse_telemetry) = Self::build_streaming_telemetry(
+            session_telemetry,
+            request_auth_context,
+            RequestRouteTelemetry::for_endpoint(protocol.path),
+            self.client.state.auth_env_telemetry.clone(),
+        );
+
+        let mut input = prompt.get_formatted_input_for_request(model_info);
+        // Item kinds that only the Responses protocol understands are dropped,
+        // along with the encrypted payloads it uses to round-trip them.
+        input.retain(|item| !matches!(item, ResponseItem::ConfigurationUpdate { .. }));
+        for item in &mut input {
+            item.clear_internal_chat_message_metadata_passthrough();
+            if let ResponseItem::FunctionCall {
+                encrypted_function_args,
+                ..
+            } = item
+            {
+                *encrypted_function_args = None;
+            }
+        }
+        self.client.prepare_response_items_for_request(&mut input);
+        let instructions = prompt.base_instructions.text.as_str();
+        let resolved_effort = effort.map(|effort| model_info.resolve_reasoning_effort(effort));
+        let request = ChatRequest {
+            model: &model_info.slug,
+            instructions: (!instructions.is_empty()).then_some(instructions),
+            items: &input,
+            tools: &prompt.tools,
+            stream: true,
+            max_output_tokens: None,
+            effort: resolved_effort.as_ref(),
+        };
+        let (body, tool_aliases) = match protocol
+            .build_request(&request)
+            .map_err(map_provider_error)?
+        {
+            BuiltRequest::Json {
+                request,
+                tool_aliases,
+            } => (request.body, tool_aliases),
+            // The Responses protocol keeps its own serializer and never
+            // reaches this method.
+            BuiltRequest::ResponsesApi => return Err(without_decoder()),
+        };
+        // The decoder is built from the request that was just rendered: a flat
+        // tool name on the wire only maps back to its tool through the aliases
+        // that request sent.
+        let Some(decoder) = protocol.event_decoder(tool_aliases) else {
+            return Err(without_decoder());
+        };
+
+        let client =
+            ApiEventStreamClient::new(transport, client_setup.api_provider, client_setup.api_auth)
+                .with_telemetry(Some(request_telemetry), Some(sse_telemetry));
+        let stream = client
+            .stream(
+                protocol.path,
+                body,
+                ApiHeaderMap::new(),
+                Compression::None,
+                decoder,
+            )
+            .await
+            .map_err(|err| self.client.state.provider.map_api_error(err))?;
+
+        let (stream, _) = map_response_stream(
+            stream,
+            session_telemetry.clone(),
+            // Rollout tracing records the Responses request/response pair, which
+            // these protocols do not produce.
+            InferenceTraceAttempt::disabled(),
+            Arc::clone(&self.client.state.provider),
+            Vec::new(),
+        );
+        Ok(stream)
     }
 
     /// Permanently disables WebSockets for this Codex session and resets WebSocket state.
@@ -2326,6 +2456,23 @@ fn stamp_ws_stream_request_start_ms(request: &mut ResponsesWsRequest<'_>) {
             X_CODEX_WS_STREAM_REQUEST_START_MS_CLIENT_METADATA_KEY.to_string(),
             crate::turn_timing::now_unix_timestamp_ms().to_string(),
         );
+}
+
+fn map_provider_error(error: ProviderError) -> CodexErr {
+    match error {
+        ProviderError::UnsupportedWireApi(wire_api) => CodexErr::UnsupportedOperation(format!(
+            "wire_api = \"{wire_api}\" has no request builder in this build"
+        )),
+        ProviderError::InvalidToolArguments { name, source } => CodexErr::InvalidRequest(format!(
+            "tool call `{name}` carried arguments that are not valid JSON: {source}"
+        )),
+        ProviderError::Serialize { context, source } => CodexErr::Stream(format!(
+            "could not serialize the {context} request: {source}"
+        )),
+        ProviderError::SdkBuild { context, message } => {
+            CodexErr::InvalidRequest(format!("could not build the {context} request: {message}"))
+        }
+    }
 }
 
 fn is_guardian_reviewer(responses_headers: &ApiHeaderMap) -> bool {

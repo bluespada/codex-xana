@@ -9,9 +9,6 @@ doctest = false
 name = "codex_guardian_context"
 path = "src/lib.rs"
 
-[lints]
-workspace = true
-
 [dependencies]
 codex-context-fragments = { workspace = true }
 codex-history = { workspace = true }
@@ -20,3 +17,6 @@ serde_json = { workspace = true }
 
 [dev-dependencies]
 pretty_assertions = { workspace = true }
+
+[lints]
+workspace = true

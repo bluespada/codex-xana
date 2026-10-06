@@ -13,9 +13,6 @@ doctest = false
 name = "codex-windows-sandbox-service"
 path = "src/main.rs"
 
-[lints]
-workspace = true
-
 [dependencies]
 anyhow = { workspace = true }
 codex-cloud-config = { workspace = true }
@@ -25,9 +22,6 @@ codex-windows-sandbox = { workspace = true }
 serde_json = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt", "sync", "time"] }
 toml = { workspace = true }
-
-[dev-dependencies]
-pretty_assertions = { workspace = true }
 
 [target.'cfg(windows)'.dependencies.windows]
 version = "0.58"
@@ -62,3 +56,9 @@ features = [
     "Win32_System_Threading",
     "Win32_UI_Shell",
 ]
+
+[dev-dependencies]
+pretty_assertions = { workspace = true }
+
+[lints]
+workspace = true

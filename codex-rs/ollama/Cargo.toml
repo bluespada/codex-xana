@@ -9,9 +9,6 @@ name = "codex_ollama"
 path = "src/lib.rs"
 doctest = false
 
-[lints]
-workspace = true
-
 [dependencies]
 async-stream = { workspace = true }
 bytes = { workspace = true }
@@ -35,3 +32,6 @@ wiremock = { workspace = true }
 [dev-dependencies]
 assert_matches = { workspace = true }
 pretty_assertions = { workspace = true }
+
+[lints]
+workspace = true

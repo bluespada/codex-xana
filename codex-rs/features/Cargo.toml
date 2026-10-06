@@ -9,9 +9,6 @@ doctest = false
 name = "codex_features"
 path = "src/lib.rs"
 
-[lints]
-workspace = true
-
 [dependencies]
 codex-network-proxy = { workspace = true }
 codex-protocol = { workspace = true }
@@ -23,3 +20,6 @@ tracing = { workspace = true, features = ["log"] }
 
 [dev-dependencies]
 pretty_assertions = { workspace = true }
+
+[lints]
+workspace = true

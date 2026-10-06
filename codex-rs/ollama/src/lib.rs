@@ -108,7 +108,7 @@ mod tests {
             .mount(&server)
             .await;
 
-        let provider = create_oss_provider_with_base_url(&server.uri(), WireApi::Responses);
+        let provider = create_oss_provider_with_base_url(&server.uri(), WireApi::OpenAiResponses);
         let client = OllamaClient::try_from_provider(
             &provider,
             HttpClientFactory::new(OutboundProxyPolicy::ReqwestDefault),

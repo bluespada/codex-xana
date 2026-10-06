@@ -1047,6 +1047,9 @@ async fn code_mode_only_exposes_direct_model_only_mcp_namespaces() -> Result<()>
                 .expect("test config should allow feature update");
             config.code_mode.direct_only_tool_namespaces =
                 vec![SEARCH_CALENDAR_NAMESPACE.to_string()];
+            // This test covers the code-mode-only tool surface, so keep the mode in effect
+            // even when the test build has no code-mode host binary to point at.
+            config.code_mode.disable_in_process_fallback = true;
         });
     let test = builder.build(&server).await?;
     test.submit_turn("inspect directly exposed MCP tools")
