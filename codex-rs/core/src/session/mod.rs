@@ -315,6 +315,7 @@ use crate::state::PendingRequestPermissions;
 use crate::state::ReasoningEffortPin;
 use crate::state::SessionServices;
 use crate::state::SessionState;
+use crate::state::TaskKind;
 #[cfg(test)]
 use crate::stream_events_utils::HandleOutputCtx;
 #[cfg(test)]
@@ -1752,6 +1753,7 @@ impl Session {
             last_started_turn_id,
             previous_turn_settings,
             reference_context_item,
+            turn_attribution,
             world_state_baseline,
             window_number,
             first_window_id,
@@ -1807,6 +1809,7 @@ impl Session {
                 reviewer_compaction_hash.as_deref(),
             );
             state.last_started_turn_id = last_started_turn_id;
+            state.turn_attribution = turn_attribution;
             if let Some(world_state) = world_state_baseline {
                 state.history.set_world_state_baseline(world_state);
             }
@@ -2257,8 +2260,9 @@ impl Session {
             .trusted_guardian_reviewer
     }
 
-    pub(crate) async fn emit_turn_started(&self, turn_context: &TurnContext) {
+    pub(crate) async fn emit_turn_started(&self, turn_context: &TurnContext, task_kind: TaskKind) {
         let event = TurnStartedEvent {
+            turn_attribution: (task_kind == TaskKind::Regular).then(|| turn_context.attribution()),
             turn_id: turn_context.sub_id.clone(),
             root_turn_id: Some(
                 turn_context
@@ -4080,6 +4084,7 @@ impl Session {
                 resume_metadata: Some(CompactionResumeMetadata {
                     multi_agent_version: self.multi_agent_version(),
                     last_started_turn_id: state.last_started_turn_id.clone(),
+                    turn_attribution: state.turn_attribution.clone(),
                     previous_turn_settings: state.previous_turn_settings(),
                 }),
             }

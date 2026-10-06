@@ -560,6 +560,7 @@ async fn get_status_returns_not_found_without_manager() {
 #[tokio::test]
 async fn on_event_updates_status_from_task_started() {
     let status = agent_status_from_event(&EventMsg::TurnStarted(TurnStartedEvent {
+        turn_attribution: None,
         turn_id: "turn-1".to_string(),
         root_turn_id: None,
         trace_id: None,
@@ -2092,7 +2093,14 @@ async fn spawn_agent_fork_sanitizes_inherited_compaction_metadata() {
     let (parent_thread_id, parent_thread) = harness.start_paginated_thread().await;
     let parent_resume_metadata = codex_history::CompactionResumeMetadata {
         multi_agent_version: Some(MultiAgentVersion::V2),
-        last_started_turn_id: Some("parent-turn".into()),
+        last_started_turn_id: Some("parent-turn".to_string()),
+        turn_attribution: Some(codex_history::TurnAttribution {
+            turn_id: "parent-turn".to_string(),
+            turn_trigger: Some("automation".to_string()),
+            parent_turn_id: Some("initiating-turn".to_string()),
+            initiating_agent_path: Some(codex_protocol::AgentPath::root()),
+            root_turn_id: Some("root-turn".to_string()),
+        }),
         previous_turn_settings: Some(codex_history::PreviousTurnSettings {
             model: "parent-model".into(),
             comp_hash: None,
@@ -2218,6 +2226,7 @@ async fn spawn_agent_fork_sanitizes_inherited_compaction_metadata() {
         inherited_resume_metadata,
         &codex_history::CompactionResumeMetadata {
             multi_agent_version: Some(MultiAgentVersion::V1),
+            turn_attribution: None,
             ..parent_resume_metadata
         }
     );
@@ -3105,6 +3114,7 @@ async fn spawn_agent_full_fork_legacy_compaction_rebuilds_child_instructions_onc
                 resume_metadata: Some(codex_history::CompactionResumeMetadata {
                     multi_agent_version: Some(MultiAgentVersion::V2),
                     last_started_turn_id: None,
+                    turn_attribution: None,
                     previous_turn_settings: Some(codex_history::PreviousTurnSettings {
                         model: "parent-model".into(),
                         comp_hash: None,
@@ -3198,6 +3208,7 @@ async fn spawn_agent_full_fork_legacy_compaction_rebuilds_child_instructions_onc
             Some(codex_history::CompactionResumeMetadata {
                 multi_agent_version: Some(MultiAgentVersion::V2),
                 last_started_turn_id: None,
+                turn_attribution: None,
                 previous_turn_settings: None,
             })
         );
