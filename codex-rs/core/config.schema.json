@@ -6708,21 +6708,21 @@
       "description": "Wire protocol that the provider speaks.\n\nThe serialized form is the accepted TOML value for `wire_api` in `config.toml`. The legacy spelling `responses` is still accepted as an alias for [`WireApi::OpenAiResponses`].",
       "oneOf": [
         {
-          "description": "The Responses API exposed by OpenAI at `/v1/responses`.",
+          "description": "The Responses API exposed by OpenAI at `/v1/responses`. Codex posts to `/responses` under a base URL that already carries the version.",
           "enum": [
             "openai-responses"
           ],
           "type": "string"
         },
         {
-          "description": "The Chat Completions API exposed by OpenAI at `/v1/chat/completions`.",
+          "description": "The Chat Completions API exposed by OpenAI at `/v1/chat/completions`, posted to as `/chat/completions` under that same base URL.",
           "enum": [
             "openai-completions"
           ],
           "type": "string"
         },
         {
-          "description": "The Messages API exposed by Anthropic at `/v1/messages`.",
+          "description": "The Messages API exposed by Anthropic at `/v1/messages`, posted to as `/messages` under a base URL such as `https://api.anthropic.com/v1`.",
           "enum": [
             "anthropic-messages"
           ],
